@@ -16,10 +16,13 @@ Static site. No build step. Hosted on GitHub Pages.
 |---|---|---|
 | Move | Arrow keys / WASD | Tap = forward, swipe = direction |
 | Start / restart | Space or Enter, or any move | Tap |
+| Bark | B, or the **🐶** button | **Shake** the phone, or the 🐶 button |
 | Pause | P or Esc, or the **II** button | **II** button |
 | Mute | M, or the **♪** button | **♪** button |
 
-Don't idle — the eagle is watching. Don't fall behind the camera, either.
+A bark stops every car in your row and the two ahead for a moment (6 s cooldown). Trains are unimpressed. Don't idle and don't fall behind the camera — the squirrels have a saucer, and they've had enough of being chased.
+
+**Things to fetch:** tennis balls (chain them inside six seconds for a combo up to ×3), rare **golden balls** worth 5, **squirrels** (+3, they panic and bolt), and Charlie's **caterpillar** (+5, he'll play with it). Three hops in a second and he gets the **zoomies**. Balls unlock his outfits — shades, bandana, bow tie, sweater — which he puts on at the start of the next run. The sky turns through dusk and night as your score climbs. **DAILY CHALLENGE** on the title plays the same world for everyone that day; **CARD** on game over makes a shareable trading card of the run.
 
 ## Hosting
 
@@ -41,6 +44,7 @@ This is only for previewing before you push. It is **not** a requirement for hos
 Useful URL parameters:
 
 - `?seed=123` — reproduce an exact world
+- `?enable_all_outfits=yes` — every outfit available, for looking at the wardrobe without earning it
 - `?debug=1` — fps, draw calls, row types, and a control surface on `window.__game` (`step`, `steps`, `input`, `reset`, `stats`, `errors`) that drives the simulation independently of `requestAnimationFrame`. That is how the game was verified: a backgrounded tab freezes rAF, so time-dependent behaviour is stepped and asserted on, never trusted from screenshots.
 
 ## Tests

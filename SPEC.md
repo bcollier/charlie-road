@@ -501,6 +501,29 @@ The main loop must therefore route all simulation through the same fixed-step fu
 
 ---
 
-## 12. Out of scope
+## 12. Round two — additions after the first release
+
+Requested after play-testing the first release. All built and verified through the harness; screenshots in `screenshots/round2-*`.
+
+| # | Feature | Where | Verified |
+|---|---|---|---|
+| R1 | **Bark** — B key, on-screen 🐶 button, phone shake (iOS permission on first tap). Vehicles in his row + 2 ahead stop 1.5 s with a flinch and screech; trains don't care; a searching saucer is scared off. 6 s cooldown shown as the button refilling | `bark.js`, `rows/road.js` (per-lane clock pause) | vehicles hold position for exactly the freeze, second bark refused during cooldown |
+| R2 | **The saucer replaces the eagle** — squirrel-piloted, searchlight sweeps and locks on, tractor beam lifts him spinning into the dome, zips away. "ABDUCTED!" | `saucer.js`, `models/saucer.js` | warning at idle 4.2 s, cancel on move or bark, beam-up to y=3.15 spinning, zip to z=−11.5 |
+| R3 | **Bandana visible from behind** — tied with a neck band, knot and tails at the back; bow tie gets a neck band; **shades are the first unlock (10)** | `models/accessories.js` | close-up from the play camera |
+| R4 | **Unlock celebration** — item flies in, spins over his head with confetti and a jingle, shoots away; **dress-up** at the next game start: item drops onto him, he puts it on and spins. 1.3 s on the safe grass, moves buffered | `unlocks.js`, `dressing` phase | title → dressing → playing with the buffered hop firing after; equipped + persisted |
+| R5 | **Controls on screen** — device-aware line on the title, first-visit hint bar | `ui.js`, `main.js` | both texts render |
+| R6 | **Golden ball** — worth 5, higher bounce, chime; favours the first grass after a hazard run | `rules/worldgen.js`, `balls.js` | +5 with toast |
+| R7 | **Fetch combo** — pickups chained inside 6 s multiply value up to ×3; ding pitch climbs; ×N COMBO pop | `main.js` | ×2 shown and valued |
+| R8 | **Zoomies** — 3 hops in 1 s → 2 s at half hop duration, ears pinned, fur trail; 8 s cooldown | `player.js`, `models/charlie.js` | hop in 6 steps vs 10, ears −0.78 |
+| R9 | **Caterpillar** (IMG_2328) — inches across grass rows behind a big, delighted yellow head; catch for +5: three squeaks, confetti, held sideways in his mouth and shaken for 2.4 s, then left on the grass | `critters.js`, `models/caterpillar.js` | spawn, catch, hold, drop |
+| R10 | **Squirrels** — dash and pause; panic at 1.8 tiles and flee just under his speed; turn back at the field edge (the catch window), escape after two bounces. +3 | `critters.js`, `models/squirrel.js` | panic, bounce, caught |
+| R11 | **Day cycle** — day → dusk → night → dawn over 300 rows; sun colour and elevation; head/tail lights glow after dark | `daycycle.js`, `palette.js` | sky `#ee9e6b` at 150, `#292d6a` at 200 |
+| R12 | **Daily challenge** — same world for everyone each day (UTC date seed), per-day best, DAILY tag | `main.js`, `ui.js` | seed 260912 on 2026-09-12, DAILY BEST stored |
+| R13 | **Shareable card** — Charlie photographed face-on into a render target, composed on a holographic card with score, best, balls, outfit, date; SAVE (PNG) and SHARE (Web Share) | `card.js` | 525 KB PNG, overlay ordering, pose restored |
+| R14 | **`?enable_all_outfits=yes`** (or `?outfits=all`) — every outfit available for testing | `models/accessories.js` | all four equip |
+
+**Round-two session check:** 120 s / 7,200 steps of random play with barks every ~7 s: zero errors, 22 deaths across squashed / train / drowned. Shipped page without `?debug` exposes no harness.
+
+## 13. Out of scope
 
 Multiple playable characters, the coin gacha, extra world themes, daily challenges, leaderboards, multiplayer, and any server component.
