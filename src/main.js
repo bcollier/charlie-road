@@ -1,4 +1,5 @@
-// Bootstrap, the fixed-step main loop, and the ?debug=1 harness.
+// Bootstrap, the fixed-step main loop, the game state machine, and the
+// ?debug=1 harness.
 //
 // All simulation goes through step(dt). requestAnimationFrame only decides when
 // and how many times to call it; the harness can call it directly, which is
@@ -6,27 +7,38 @@
 // never fires. See SPEC.md §9a.
 
 import * as THREE from 'three';
-import { SIM, FIELD, DIFF } from './config.js';
-import { PALETTE } from './palette.js';
+import { SIM, FIELD, ROW_SCREEN_Y } from './config.js';
 import { createScene } from './scene.js';
 import { createCamera } from './camera.js';
 import { createInput } from './input.js';
+import { createWorld } from './world.js';
+import { createUI } from './ui.js';
+import { storage } from './storage.js';
 import { createCharlie } from './models/charlie.js';
 import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate } from './player.js';
+import { difficulty } from './rules/difficulty.js';
+import { aabb, playerBox, vehicleBox } from './rules/collide.js';
 import { stats as voxelStats } from './voxel.js';
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
+const FIXED_SEED = params.has('seed') ? Number(params.get('seed')) : null;
+
+const DEATH_HOLD = 0.9;
 
 // ---- State ------------------------------------------------------------------
-// One plain object holding everything the simulation knows. Rendering reads it;
-// nothing else writes it except step().
 export const state = {
   phase: 'playing',   // 'title' | 'playing' | 'dying' | 'gameover' | 'paused'
-  time: 0,            // simulated seconds
-  frame: 0,           // simulation steps taken
-  seed: Number(params.get('seed')) || (Date.now() % 1_000_000),
+  time: 0,
+  frame: 0,
+  seed: FIXED_SEED ?? (Date.now() % 1_000_000),
   score: 0,
+  best: storage.get('highScore', 0),
+  ballsRun: 0,
+  ballsTotal: storage.get('ballsTotal', 0),
+  plays: storage.get('plays', 0),
+  death: null,        // { type, t }
+  newBest: false,
   player: createPlayer(),
 };
 
@@ -34,63 +46,133 @@ const errors = [];
 window.addEventListener('error', (e) => errors.push(String(e.message || e)));
 window.addEventListener('unhandledrejection', (e) => errors.push('unhandledrejection: ' + String(e.reason)));
 
-// ---- Scene ------------------------------------------------------------------
+// ---- Scene & systems --------------------------------------------------------
 const canvas = document.getElementById('game');
 const view = createScene(canvas);
 const { renderer, scene, camera } = view;
 const cam = createCamera(view);
-
-// Block 1 placeholder world: grass bands with one asphalt strip so Charlie's
-// contrast can be judged on both (A3). Replaced by the real generator in Block 2.
-const slabGeo = new THREE.BoxGeometry(FIELD.MAX_X - FIELD.MIN_X + 1, 0.5, 1);
-for (let r = 0; r < 24; r++) {
-  const road = r >= 4 && r <= 6;
-  const color = road ? PALETTE.ASPHALT : (r % 2 ? PALETTE.GRASS_B : PALETTE.GRASS_A);
-  const m = new THREE.Mesh(slabGeo, new THREE.MeshLambertMaterial({ color }));
-  m.position.set(0, road ? -0.27 : -0.25, -r);
-  m.receiveShadow = true;
-  scene.add(m);
-}
-
+const world = createWorld(scene, state.seed);
+const ui = createUI(document.getElementById('ui'));
 const charlie = createCharlie();
 scene.add(charlie.root);
 
-// ---- World hooks the player needs (real ones arrive in Block 2) -----------
-const world = {
+// ---- Hooks the player state machine needs ---------------------------------
+const hooks = {
   time: 0,
   minRow: 0,
-  canMoveTo: (x, row) => true,
+  canMoveTo: (x, row) => world.canMoveTo(x, row),
   onHop: null,
   onBlocked: null,
 };
 
 // ---- Input ------------------------------------------------------------------
+function onAction() {
+  if (state.phase === 'gameover') restart();
+}
 createInput({
-  onMove: (dir) => { if (state.phase === 'playing') queueMove(state.player, dir); },
-  onAction: () => {},
+  onMove: (dir) => { if (state.phase === 'playing') queueMove(state.player, dir); else if (state.phase === 'gameover') restart(); },
+  onTap: () => { if (state.phase === 'playing') queueMove(state.player, 'up'); else onAction(); },
+  onAction,
   onPause: () => {},
   onMute: () => {},
 }, canvas);
 
-// ---- Simulation -------------------------------------------------------------
-function autoScrollSpeed() {
-  const t = Math.min(state.score, DIFF.SCORE_CAP) / DIFF.SCORE_CAP;
-  return DIFF.AUTO_SCROLL.start + (DIFF.AUTO_SCROLL.end - DIFF.AUTO_SCROLL.start) * t;
+// ---- Death ------------------------------------------------------------------
+function die(type) {
+  if (state.phase !== 'playing') return;
+  state.phase = 'dying';
+  state.death = { type, t: 0 };
+  const p = state.player;
+  p.alive = false;
+  clearQueue(p);
+  p.hop = null;
+  p.celebrate = -1;
 }
 
+function finishDeath() {
+  state.phase = 'gameover';
+  state.plays += 1;
+  storage.set('plays', state.plays);
+  state.newBest = state.score > state.best;
+  if (state.newBest) {
+    state.best = state.score;
+    storage.set('highScore', state.best);
+  }
+  ui.setBest(state.best);
+  ui.showGameOver(state.score, state.best, state.newBest);
+}
+
+function restart() {
+  const seed = FIXED_SEED ?? (Date.now() % 1_000_000);
+  reset(seed);
+}
+
+function reset(seed) {
+  state.seed = seed;
+  state.time = 0; state.frame = 0; state.score = 0; state.ballsRun = 0;
+  state.death = null; state.newBest = false;
+  state.player = createPlayer();
+  state.phase = 'playing';
+  ui.hideGameOver();
+  ui.setScore(0);
+  world.reset(seed);
+  cam.reset();
+  ensureWorld(state.player);
+  world.update(0);
+}
+
+// ---- World upkeep ----------------------------------------------------------
+// Generate ahead of whichever is further forward (camera or Charlie), recycle
+// behind whichever is further back, and show only the rows the frustum can see.
+function ensureWorld(p) {
+  const front = Math.max(cam.row, p.row);
+  const back = Math.min(cam.row, p.row);
+  const span = view.frustum.halfH / ROW_SCREEN_Y;      // rows from target to screen edge
+  const target = cam.row + cam.leadRows;
+  world.ensure(front, back, target - span - 1.5, target + span + 3);
+}
+
+// ---- Collision --------------------------------------------------------------
+function checkCollisions(p) {
+  const pb = playerBox(p.px, p.pz);
+  const lo = Math.floor(-p.pz - 0.5), hi = Math.ceil(-p.pz + 0.5);
+  for (let i = lo; i <= hi; i++) {
+    const r = world.row(i);
+    if (!r || r.desc.type !== 'road') continue;
+    for (const v of r.vehicles) {
+      if (aabb(pb, vehicleBox(v.x, -i, v.kind))) return die('squashed');
+    }
+  }
+}
+
+// ---- Simulation -------------------------------------------------------------
 function step(dt) {
   state.time += dt;
   state.frame += 1;
-  world.time = state.time;
+  hooks.time = state.time;
 
   const p = state.player;
+  world.update(state.time);
+
   if (state.phase === 'playing') {
-    updatePlayer(p, dt, world);
-    if (p.row > state.score) state.score = p.row;
-    cam.update(dt, p, autoScrollSpeed());
+    hooks.minRow = Math.max(0, Math.ceil(cam.trailingRow()));
+    updatePlayer(p, dt, hooks);
+    if (p.row > state.score) { state.score = p.row; ui.setScore(state.score); }
+    checkCollisions(p);
+    cam.update(dt, p, difficulty(state.score).autoScroll);
+    ensureWorld(p);
+  } else if (state.phase === 'dying') {
+    state.death.t += dt;
+    // Squash: flatten fast, spread a little.
+    const k = Math.min(1, state.death.t / 0.12);
+    p.scale = [1 + 0.45 * k, 1 - 0.85 * k, 1 + 0.45 * k];
+    p.py = 0;
+    p.vx = 0; p.vy = 0;
+    cam.update(dt, p, 0);
+    if (state.death.t >= DEATH_HOLD) finishDeath();
   }
 
-  // Sync the rig to the player.
+  // Sync the rig.
   charlie.root.position.set(p.px, p.py, p.pz);
   charlie.root.scale.set(p.scale[0], p.scale[1], p.scale[2]);
   charlie.animate(dt, {
@@ -108,14 +190,6 @@ function render() {
   renderer.render(scene, camera);
 }
 
-function reset(seed) {
-  if (seed !== undefined) state.seed = seed;
-  state.time = 0; state.frame = 0; state.score = 0;
-  state.player = createPlayer();
-  state.phase = 'playing';
-  cam.reset();
-}
-
 // ---- Loop -------------------------------------------------------------------
 let last = performance.now();
 let fpsAcc = 0, fpsFrames = 0, fps = 0;
@@ -125,15 +199,10 @@ function frame(now) {
   last = now;
   if (dt > SIM.DT_CLAMP) dt = SIM.DT_CLAMP;
   if (dt < 0) dt = 0;
-
-  // Split the frame into substeps no larger than MAX_STEP so fast movers can
-  // never tunnel through a hitbox on a slow frame.
   const n = Math.max(1, Math.ceil(dt / SIM.MAX_STEP));
   const sub = dt / n;
   for (let i = 0; i < n; i++) step(sub);
-
   render();
-
   fpsAcc += dt; fpsFrames++;
   if (fpsAcc >= 0.5) { fps = fpsFrames / fpsAcc; fpsAcc = 0; fpsFrames = 0; }
   requestAnimationFrame(frame);
@@ -141,7 +210,9 @@ function frame(now) {
 
 window.addEventListener('resize', () => view.resize());
 view.resize();
-cam.reset();
+ui.setBest(state.best);
+ui.setBalls(state.ballsTotal);
+reset(state.seed);
 requestAnimationFrame(frame);
 
 // ---- Debug harness (§9a) ---------------------------------------------------
@@ -151,8 +222,9 @@ if (DEBUG) {
     step,
     steps(n, dt = 1 / 60) { for (let i = 0; i < n; i++) step(dt); render(); return state; },
     input(dir) { return queueMove(state.player, dir); },
-    reset(seed) { reset(seed); render(); return state.seed; },
+    reset(seed) { reset(seed ?? state.seed); render(); return state.seed; },
     celebrate() { celebrate(state.player); },
+    die,
     stats() {
       const info = renderer.info;
       return {
@@ -163,14 +235,17 @@ if (DEBUG) {
         time: Number(state.time.toFixed(3)),
         visibility: document.visibilityState,
         voxel: voxelStats(),
+        rows: world.rows.size,
         cam: { x: +cam.x.toFixed(2), row: +cam.row.toFixed(2), scroll: +cam.scrollRow.toFixed(2), trailing: +cam.trailingRow().toFixed(2) },
       };
     },
+    rowTypes(from, to) {
+      const out = [];
+      for (let i = from; i <= to; i++) { const r = world.row(i); out.push(r ? r.desc.type[0] : '.'); }
+      return out.join('');
+    },
     errors,
-    view,
-    cam,
-    charlie,
-    THREE,
+    view, cam, world, charlie, ui, storage, THREE,
   };
   const hud = document.createElement('div');
   hud.id = 'debug';
@@ -178,6 +253,6 @@ if (DEBUG) {
   setInterval(() => {
     const s = window.__game.stats();
     const p = state.player;
-    hud.textContent = `fps ${s.fps}  calls ${s.drawCalls}  t ${s.time}  ${s.visibility}  | pos ${p.x.toFixed(1)},${p.row}  cam ${s.cam.row}  scroll ${s.cam.scroll}  score ${state.score}`;
+    hud.textContent = `fps ${s.fps}  calls ${s.drawCalls}  rows ${s.rows}  t ${s.time}  ${s.visibility}  | ${state.phase}  pos ${p.x.toFixed(1)},${p.row}  cam ${s.cam.row}  scroll ${s.cam.scroll}  score ${state.score}  seed ${state.seed}`;
   }, 250);
 }

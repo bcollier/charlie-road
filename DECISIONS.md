@@ -18,3 +18,14 @@ One line of reasoning each. Newest at the bottom.
 8. **Tail tip is LIVER_LIGHT.** A single-colour tail vanished against the saddle from above; a lighter cap reads as a wagging thing.
 9. **A2 at gameplay scale is judged on silhouette, not muzzle length.** Breed-specific cues (domed skull, short muzzle, round eyes) are built per spec but only resolve in profile or close-up. The full-face test happens on the title/game-over screens in Block 6, where he is larger and facing the viewer.
 10. **Player screen position: 30% of half-height below centre** (`PLAYER_SCREEN_FRAC`), ≈65% down the screen, holding across aspects. Auto-scroll starts 1.0 s after the first hop and the frontier never lags more than 2 rows behind him.
+
+## Block 2
+
+11. **Hazard-run cap is judged at the row where the run began.** First test run caught the generator extending a run whenever the row index crossed a difficulty threshold mid-run (2→3 at row 100, 3→4 at 200). A player entering a run at score 99 was promised ≤2 rows; crossing 100 must not stretch it. Generator now tracks `runStart`.
+12. **Vehicle and platform positions are pure functions of time** — `x = wrap(x0 + dir·speed·t)` — rather than accumulated per frame. No drift, exact reproducibility from a seed, and collision can be evaluated at any instant. Same field feeds the renderer and the hitbox, which is v1's bug #1 fixed by construction.
+13. **Every static thing in a grass row is merged into one mesh per colour.** Separate tree meshes cost ~45 draw calls per visible row; merged it is ~5. Not cached by name since each row's layout is unique; geometry is disposed on recycle.
+14. **Vehicles are capped at four colours each** (body, white, glass, tyre): headlights are white, tail lights dropped, truck chassis is tyre-black. Each colour is a draw call; two lights cost as much as the whole car.
+15. **Rows are hidden outside the frustum band explicitly.** A merged 25-tile row has a bounding sphere that never leaves the frustum, so three.js would draw every generated row, twice with the shadow pass. Visibility is set from the camera's row span each step. Typical draw calls now 104–151 (was 498–649).
+16. **Vehicle traffic lives in `rows/road.js`, not a separate `hazards.js`.** Each row owns its movers and exposes them; the spec's `hazards.js` would have been a pass-through.
+17. **River and rail rows are coloured placeholder slabs until Blocks 3–4**, walkable and harmless, so the checkpoint is playable end to end with the real generator.
+18. **Camera pitch re-judged with real content: stays 57°.** Side by side with `reference/cr_s031.png`, the tilt, row proportions, vehicle-to-lane fit and shading pattern all match. Not worth a second constant.

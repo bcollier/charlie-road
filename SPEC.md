@@ -450,14 +450,14 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit
 
 ### Block 2 — World, grass, roads — **SAFETY CHECKPOINT** (0:55–1:35)
-- [ ] `rules/rng.js`, `rules/difficulty.js`, `rules/worldgen.js`
-- [ ] `world.js` row pool + recycling
-- [ ] `rows/grass.js`; `models/{tree,rock}.js`
-- [ ] `rows/road.js`; `models/{car,truck,bus}.js`; `hazards.js` traffic
-- [ ] `rules/collide.js` + squash death
-- [ ] Score HUD + `BEST`
-- [ ] `tests/run.js` covering invariants 1, 2, 3, 5, 6
-- [ ] Commit — **the game must be playable end to end here**
+- [x] `rules/rng.js`, `rules/difficulty.js`, `rules/worldgen.js`
+- [x] `world.js` row pool + recycling
+- [x] `rows/grass.js`; `models/{tree,rock}.js`
+- [x] `rows/road.js`; `models/{car,truck,bus}.js`; `hazards.js` traffic
+- [x] `rules/collide.js` + squash death
+- [x] Score HUD + `BEST`
+- [x] `tests/run.js` covering invariants 1, 2, 3, 5, 6
+- [x] Commit — **the game must be playable end to end here**
 
 ### Block 3 — River (1:35–2:05)
 - [ ] `rows/river.js`; `models/{log,lilypad}.js`
