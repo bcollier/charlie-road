@@ -14,8 +14,11 @@ import { createInput } from './input.js';
 import { createWorld } from './world.js';
 import { createRiverSystem } from './river.js';
 import { createEagleSystem } from './eagle.js';
+import { createAudio } from './audio.js';
+import { createParticles } from './particles.js';
 import { createUI } from './ui.js';
 import { storage } from './storage.js';
+import { BALL } from './config.js';
 import { createCharlie } from './models/charlie.js';
 import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate } from './player.js';
 import { difficulty, idleLimit } from './rules/difficulty.js';
@@ -62,14 +65,16 @@ scene.add(charlie.root);
 // ---- Hooks the player state machine needs ---------------------------------
 const river = createRiverSystem(world, (type) => die(type));
 const eagle = createEagleSystem(scene, (type) => die(type));
+const audio = createAudio();
+const particles = createParticles(scene);
 const hooks = {
   time: 0,
   minRow: 0,
   canMoveTo: (x, row) => world.canMoveTo(x, row),
   isWater: (row) => world.isWater(row),
   onLanded: (p) => river.onLanded(p),
-  onHop: null,
-  onBlocked: null,
+  onHop: (p) => audio.hop(p.hopsChained),
+  onBlocked: () => audio.blocked(),
 };
 
 // ---- Input ------------------------------------------------------------------
@@ -77,11 +82,11 @@ function onAction() {
   if (state.phase === 'gameover') restart();
 }
 createInput({
-  onMove: (dir) => { if (state.phase === 'playing') queueMove(state.player, dir); else if (state.phase === 'gameover') restart(); },
-  onTap: () => { if (state.phase === 'playing') queueMove(state.player, 'up'); else onAction(); },
-  onAction,
+  onMove: (dir) => { audio.unlock(); if (state.phase === 'playing') queueMove(state.player, dir); else if (state.phase === 'gameover') restart(); },
+  onTap: () => { audio.unlock(); if (state.phase === 'playing') queueMove(state.player, 'up'); else onAction(); },
+  onAction: () => { audio.unlock(); onAction(); },
   onPause: () => {},
-  onMute: () => {},
+  onMute: () => { audio.unlock(); audio.toggleMute(); },
 }, canvas);
 
 // ---- Death ------------------------------------------------------------------
@@ -96,6 +101,12 @@ function die(type) {
   p.hop = null;
   p.onPlatform = null;
   p.celebrate = -1;
+  switch (type) {
+    case 'squashed': audio.squash(); particles.spawn('puff', p.px, 0.1, p.pz); break;
+    case 'drowned':  audio.splash(); particles.spawn('splash', p.px, 0.05, p.pz); break;
+    case 'trainHit': audio.squash(); audio.whoosh(); particles.spawn('fur', p.px, 0.4, p.pz); break;
+    case 'eagle':    audio.eagleScreech(); break;
+  }
 }
 
 function finishDeath() {
@@ -106,6 +117,7 @@ function finishDeath() {
   if (state.newBest) {
     state.best = state.score;
     storage.set('highScore', state.best);
+    audio.newBest();
   }
   ui.setBest(state.best);
   ui.showGameOver(state.score, state.best, state.newBest);
@@ -127,6 +139,9 @@ function reset(seed) {
   world.reset(seed);
   cam.reset();
   eagle.reset();
+  particles.clear();
+  trainAudio.lastDing = -1;
+  trainAudio.hornedAt.clear();
   charlie.root.rotation.set(0, 0, 0);
   ensureWorld(state.player);
   world.update(0);
@@ -160,6 +175,48 @@ function checkCollisions(p) {
   }
 }
 
+// ---- Tennis balls -----------------------------------------------------------
+function checkBalls(p) {
+  const lo = Math.floor(-p.pz - 0.5), hi = Math.ceil(-p.pz + 0.5);
+  for (let i = lo; i <= hi; i++) {
+    const r = world.row(i);
+    const b = r && r.ball;
+    if (!b || b.collected) continue;
+    const dx = p.px - b.x, dz = p.pz - (-i);
+    if (dx * dx + dz * dz < BALL.PICKUP_RADIUS * BALL.PICKUP_RADIUS) {
+      b.collect();
+      state.ballsRun += 1;
+      state.ballsTotal += 1;
+      storage.set('ballsTotal', state.ballsTotal);
+      ui.setBalls(state.ballsTotal);
+      celebrate(p);
+      particles.spawn('sparkle', b.x, 0.3, -i);
+      audio.ballPickup();
+    }
+  }
+}
+
+// ---- Train sounds -----------------------------------------------------------
+// The bell dings every 0.45 s while a nearby group is warning; the horn
+// sounds once as a nearby train starts its sweep.
+const trainAudio = { lastDing: -1, hornedAt: new Map() };
+function checkTrainSounds(p) {
+  const here = Math.round(-p.pz);
+  let warning = false;
+  for (let i = here - 2; i <= here + 7; i++) {
+    const r = world.row(i);
+    if (!r || r.desc.type !== 'rail') continue;
+    if (r.state === 'warn') warning = true;
+    if (r.state === 'train' && r.trainX !== null) {
+      const key = i + ':' + Math.floor(state.time / 5);
+      const startedAgo = r.desc.dir > 0 ? r.trainX + 19 : 19 - r.trainX;   // tiles since the sweep began
+      if (startedAgo < 2 && !trainAudio.hornedAt.has(key)) { trainAudio.hornedAt.set(key, true); audio.trainHorn(); }
+    }
+  }
+  if (warning && state.time - trainAudio.lastDing > 0.45) { trainAudio.lastDing = state.time; audio.signalDing(); }
+  if (trainAudio.hornedAt.size > 64) trainAudio.hornedAt.clear();
+}
+
 // ---- Simulation -------------------------------------------------------------
 function step(dt) {
   state.time += dt;
@@ -175,7 +232,11 @@ function step(dt) {
     updatePlayer(p, dt, hooks);
     if (p.row > state.score) { state.score = p.row; ui.setScore(state.score); }
     checkCollisions(p);
-    if (state.phase === 'playing') eagle.update(dt, p, idleLimit(state.score), cam.trailingRow());
+    if (state.phase === 'playing') {
+      checkBalls(p);
+      checkTrainSounds(p);
+      eagle.update(dt, p, idleLimit(state.score), cam.trailingRow());
+    }
     cam.update(dt, p, difficulty(state.score).autoScroll);
     ensureWorld(p);
   } else if (state.phase === 'dying') {
@@ -209,6 +270,8 @@ function step(dt) {
     cam.update(dt, p, 0);
     if (t >= (DEATH_HOLD[state.death.type] ?? 0.9)) finishDeath();
   }
+
+  particles.update(dt);
 
   // Sync the rig.
   charlie.root.position.set(p.px, p.py, p.pz);
@@ -286,7 +349,7 @@ if (DEBUG) {
       return out.join('');
     },
     errors,
-    view, cam, world, charlie, eagle, river, ui, storage, THREE,
+    view, cam, world, charlie, eagle, river, audio, particles, ui, storage, THREE,
   };
   const hud = document.createElement('div');
   hud.id = 'debug';

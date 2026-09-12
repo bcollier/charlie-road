@@ -8,6 +8,7 @@ import { createGrassRow } from './rows/grass.js';
 import { createRoadRow } from './rows/road.js';
 import { createRiverRow } from './rows/river.js';
 import { createRailRow } from './rows/rail.js';
+import { createBall } from './balls.js';
 
 const BUILDERS = {
   grass: createGrassRow,
@@ -24,6 +25,11 @@ export function createWorld(scene, seed, extraBuilders = {}) {
   function instantiate(desc) {
     const build = builders[desc.type] || builders.grass;
     const row = build(desc);
+    row.ball = null;
+    if (desc.ball) {
+      row.ball = createBall(desc.ball.x, desc.index, (desc.index * 0.37) % 1);
+      row.group.add(row.ball.mesh);
+    }
     rows.set(desc.index, row);
     scene.add(row.group);
     return row;
@@ -72,7 +78,7 @@ export function createWorld(scene, seed, extraBuilders = {}) {
 
     /** Advance every dynamic row to simulated time t. */
     update(t) {
-      for (const r of rows.values()) r.update(t);
+      for (const r of rows.values()) { r.update(t); if (r.ball) r.ball.update(t); }
       // A rail group shares one signal, on its first track: it flashes if
       // any track in the group is in its warning window.
       for (const r of rows.values()) {

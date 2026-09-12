@@ -1,12 +1,17 @@
 // Keyboard, tap and swipe. Tap = forward, swipe ≥ 24 px = that direction.
 // Arrow keys and space are prevented from scrolling the page. See SPEC.md §7.
 
+// Keyed on both `code` and `key`: some virtual keyboards, IMEs and synthetic
+// events set only one of them.
 const KEY_DIRS = {
-  ArrowUp: 'up', KeyW: 'up',
-  ArrowDown: 'down', KeyS: 'down',
-  ArrowLeft: 'left', KeyA: 'left',
-  ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'up', KeyW: 'up', w: 'up', W: 'up',
+  ArrowDown: 'down', KeyS: 'down', s: 'down', S: 'down',
+  ArrowLeft: 'left', KeyA: 'left', a: 'left', A: 'left',
+  ArrowRight: 'right', KeyD: 'right', d: 'right', D: 'right',
 };
+const KEY_ACTION = new Set(['Space', 'Enter', ' ']);
+const KEY_PAUSE = new Set(['Escape', 'KeyP', 'p', 'P']);
+const KEY_MUTE = new Set(['KeyM', 'm', 'M']);
 
 const SWIPE_PX = 24;
 
@@ -16,25 +21,19 @@ const SWIPE_PX = 24;
  */
 export function createInput(h, surface) {
   function onKey(e) {
-    const dir = KEY_DIRS[e.code];
+    const dir = KEY_DIRS[e.code] || KEY_DIRS[e.key];
     if (dir) {
       e.preventDefault();
       if (!e.repeat) h.onMove(dir);
       return;
     }
-    switch (e.code) {
-      case 'Space':
-      case 'Enter':
-        e.preventDefault();
-        if (!e.repeat) h.onAction();
-        break;
-      case 'Escape':
-      case 'KeyP':
-        if (!e.repeat) h.onPause();
-        break;
-      case 'KeyM':
-        if (!e.repeat) h.onMute();
-        break;
+    if (KEY_ACTION.has(e.code) || KEY_ACTION.has(e.key)) {
+      e.preventDefault();
+      if (!e.repeat) h.onAction();
+    } else if (KEY_PAUSE.has(e.code) || KEY_PAUSE.has(e.key)) {
+      if (!e.repeat) h.onPause();
+    } else if (KEY_MUTE.has(e.code) || KEY_MUTE.has(e.key)) {
+      if (!e.repeat) h.onMute();
     }
   }
   window.addEventListener('keydown', onKey);

@@ -473,14 +473,14 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit
 
 ### Block 5 — Tennis balls, audio, persistence (2:30–3:00)
-- [ ] `models/ball.js` shared geometry (§4.3)
-- [ ] `balls.js`: spawn, bounce, spin, shadow, pickup
-- [ ] Celebration spin per §5.4 — **cosmetic only**
-- [ ] Ball in mouth; `particles.js` sparkles
-- [ ] `audio.js` full SFX set
-- [ ] `storage.js` with fallback; high score + balls total wired through
-- [ ] A11–A17
-- [ ] Commit
+- [x] `models/ball.js` shared geometry (§4.3)
+- [x] `balls.js`: spawn, bounce, spin, shadow, pickup
+- [x] Celebration spin per §5.4 — **cosmetic only**
+- [x] Ball in mouth; `particles.js` sparkles
+- [x] `audio.js` full SFX set
+- [x] `storage.js` with fallback; high score + balls total wired through
+- [x] A11–A17
+- [x] Commit
 
 ### Block 6 — UI shell (3:00–3:35)
 - [ ] Title screen: Charlie on grass, best score, balls fetched, start prompt
