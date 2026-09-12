@@ -245,6 +245,18 @@ html, body {
 .combo.in { animation: combo-in 1.4s ease-out forwards; }
 @keyframes combo-in { 0% { transform: scale(0.6); opacity: 0; } 15% { transform: scale(1.15); opacity: 1; } 30% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
 
+/* ---- Daily challenge and the card ----------------------------------------- */
+.daily-tag { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 999px; background: var(--ball); color: var(--ink); font-size: clamp(11px, 3cqi, 14px); font-weight: 900; letter-spacing: 0.1em; text-shadow: none; }
+.title-actions { margin-top: 0.8em; }
+.daily-btn { margin-top: 0; }
+.go-actions { display: flex; gap: 10px; justify-content: center; margin-top: 1.2em; }
+.go-actions .small-btn { margin-top: 0; }
+#cardview { background: rgba(20, 20, 40, 0.6); z-index: 20; }
+.card-frame { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: min(92cqi, 420px); }
+.card-frame img { width: 100%; height: auto; border-radius: 18px; box-shadow: 0 14px 40px rgba(0,0,0,0.45); }
+.card-actions { display: flex; gap: 10px; }
+.card-actions .small-btn { margin-top: 0; text-decoration: none; display: inline-block; }
+
 @container (max-width: 480px) {
   .chip { width: 76px; }
   .hud-btn { width: 40px; height: 40px; }

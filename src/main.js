@@ -26,6 +26,7 @@ import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate, zoomiesAc
 import { createUnlocks } from './unlocks.js';
 import { createCritters } from './critters.js';
 import { createDayCycle } from './daycycle.js';
+import { createCard } from './card.js';
 import { difficulty, idleLimit } from './rules/difficulty.js';
 import { aabb, playerBox, vehicleBox } from './rules/collide.js';
 import { stats as voxelStats } from './voxel.js';
@@ -56,6 +57,8 @@ export const state = {
   newBest: false,
   combo: 0,           // chained pickups inside COMBO.WINDOW
   lastPickupAt: -1e9,
+  mode: 'normal',     // 'normal' | 'daily' — daily plays the same world for everyone that day
+  cardBlob: null,
   equipped: Object.assign({ head: null, neck: null, body: null }, storage.get('accessory', {})),
   player: createPlayer(),
 };
@@ -76,6 +79,9 @@ const ui = createUI(document.getElementById('ui'), {
   onOutfits: () => enterTitle(),
   onEquip: (id) => equip(id),
   onBark: () => doBark(),
+  onDaily: () => startDaily(),
+  onCard: () => makeCard(),
+  onCardShare: () => shareCard(),
 });
 const charlie = createCharlie();
 scene.add(charlie.root);
@@ -94,6 +100,7 @@ const bark = createBark({ world, audio, particles, saucer });
 const unlocks = createUnlocks({ scene, charlie, audio, particles, ui, storage, state });
 const critters = createCritters({ scene, world, charlie, audio, particles, ui, awardBalls: (n, x, z, p) => awardBalls(n, x, z, p), celebrate: (p) => celebrate(p) });
 const daycycle = createDayCycle(view);
+const card = createCard({ renderer, scene, charlie });
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const CONTROLS_TEXT = IS_TOUCH
   ? 'Tap to hop · Swipe to steer · Shake or 🐶 to bark'
@@ -148,9 +155,14 @@ createInput({
 function enterTitle() {
   reset(FIXED_SEED ?? (Date.now() % 1_000_000));
   state.phase = 'title';
+  state.mode = 'normal';                       // the DAILY button opts back in
   state.player.facingAngle = Math.PI;          // face the viewer on the title
+  ui.hideCard();                               // first: it may restore the game-over overlay
   ui.hideGameOver();
   ui.hideHint();
+  ui.setDaily(false);
+  ui.setBest(state.best);
+  ui.setDailyBest(dailyBest());
   ui.setHudVisible(false);                     // the title carries its own best/balls
   ui.setControls(CONTROLS_TEXT);
   ui.showTitle({ best: state.best, ballsTotal: state.ballsTotal, equipped: state.equipped });
@@ -178,6 +190,50 @@ function startGame() {
 function togglePause() {
   if (state.phase === 'playing') { state.phase = 'paused'; ui.showPause(); }
   else if (state.phase === 'paused') { state.phase = 'playing'; ui.hidePause(); last = performance.now(); }
+}
+
+// ---- Daily challenge --------------------------------------------------------
+// Same world for everyone each day: the seed is the UTC date. Its best is
+// kept per day, separate from the all-time best.
+function dailyKey() { return new Date().toISOString().slice(0, 10); }
+function dailySeed() { return Number(dailyKey().replace(/-/g, '')) % 1_000_000; }
+function dailyBest() { return storage.get('daily.' + dailyKey(), 0); }
+
+function startDaily() {
+  if (state.phase !== 'title') return;
+  audio.unlock();
+  state.mode = 'daily';
+  reset(dailySeed());
+  state.phase = 'title';
+  ui.setDaily(true);
+  ui.setBest(dailyBest());
+  startGame();
+}
+
+// ---- The card ---------------------------------------------------------------
+async function makeCard() {
+  if (state.phase !== 'gameover') return;
+  const { dataUrl, blob } = await card.make({
+    score: state.score,
+    best: state.mode === 'daily' ? dailyBest() : state.best,
+    ballsRun: state.ballsRun,
+    ballsTotal: state.ballsTotal,
+    equipped: state.equipped,
+    daily: state.mode === 'daily',
+    isNew: state.newBest,
+    dateStr: dailyKey(),
+  });
+  state.cardBlob = blob;
+  const file = blob && typeof File === 'function' ? new File([blob], 'charlie-road.png', { type: 'image/png' }) : null;
+  const canShare = !!(file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+  ui.showCard(dataUrl, canShare);
+  render();
+}
+
+async function shareCard() {
+  if (!state.cardBlob || !navigator.share) return;
+  const file = new File([state.cardBlob], 'charlie-road.png', { type: 'image/png' });
+  try { await navigator.share({ files: [file], title: 'Charlie Road', text: `Charlie fetched ${state.ballsRun} balls and scored ${state.score}.` }); } catch { /* user cancelled */ }
 }
 
 function equip(id) {
@@ -216,6 +272,16 @@ function finishDeath() {
   state.phase = 'gameover';
   state.plays += 1;
   storage.set('plays', state.plays);
+  if (state.mode === 'daily') {
+    // The daily has its own best, kept per day. The all-time best still counts.
+    const db = dailyBest();
+    state.newBest = state.score > db;
+    if (state.newBest) { storage.set('daily.' + dailyKey(), state.score); audio.newBest(); }
+    if (state.score > state.best) { state.best = state.score; storage.set('highScore', state.best); }
+    ui.setBest(Math.max(db, state.score));
+    ui.showGameOver({ type: state.death.type, score: state.score, best: Math.max(db, state.score), isNew: state.newBest, ballsRun: state.ballsRun, daily: true });
+    return;
+  }
   state.newBest = state.score > state.best;
   if (state.newBest) {
     state.best = state.score;
@@ -227,7 +293,8 @@ function finishDeath() {
 }
 
 function restart() {
-  const seed = FIXED_SEED ?? (Date.now() % 1_000_000);
+  const seed = state.mode === 'daily' ? dailySeed() : (FIXED_SEED ?? (Date.now() % 1_000_000));
+  ui.hideCard();       // before reset(): closing the card restores the game-over overlay, which reset() then hides
   reset(seed);
 }
 
@@ -500,6 +567,7 @@ if (DEBUG) {
     errors,
     bark: () => doBark(),
     awardBalls: (n) => awardBalls(n, state.player.px, state.player.pz, state.player),
+    startDaily, makeCard, dailyKey, dailySeed, card,
     view, cam, world, charlie, saucer, barkSys: bark, unlocks, critters, daycycle, river, audio, particles, ui, storage, THREE,
   };
   const hud = document.createElement('div');
