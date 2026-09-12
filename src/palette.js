@@ -63,7 +63,41 @@ export const PALETTE = {
   EAGLE_BODY: 0x3b2a20,
   EAGLE_HEAD: 0xf2efe6,
   EAGLE_BEAK: 0xe8b93c,
+
+  // Golden ball
+  GOLD: 0xffd23a,
+  GOLD_SEAM: 0xfff4c2,
+
+  // Caterpillar (IMG_2328 — tie-dye plush, stylised up)
+  CAT_PINK: 0xff4fa3,
+  CAT_YELLOW: 0xffe23a,
+  CAT_BLUE: 0x46b4ff,
+  CAT_LIME: 0x8ce03a,
+  CAT_ORANGE: 0xff8a2a,
+  CAT_PURPLE: 0xb06cff,
+  CAT_EYE: 0x1b1b2a,
+  CAT_CHEEK: 0xff8fc0,
+
+  // Squirrel
+  SQUIRREL: 0x8a5a3c,
+  SQUIRREL_BELLY: 0xe8d9c4,
+  SQUIRREL_TAIL: 0xa0704c,
+
+  // Vehicle lights (own materials so they can glow at night)
+  HEADLIGHT: 0xfff6c0,
+  TAILLIGHT: 0xff3b3b,
 };
+
+// Sky and light keyframes for the day cycle, in order around the loop.
+export const DAY_CYCLE = [
+  { at: 0.00, sky: 0x72d8ff, ambient: 1.35, sun: 1.9, sunColor: 0xffffff, sunY: 10 },   // day
+  { at: 0.30, sky: 0x86d4ff, ambient: 1.30, sun: 1.8, sunColor: 0xfff4e0, sunY: 9 },
+  { at: 0.48, sky: 0xf4a26b, ambient: 0.95, sun: 1.5, sunColor: 0xffb070, sunY: 4 },    // dusk
+  { at: 0.62, sky: 0x2b2f6e, ambient: 0.55, sun: 0.9, sunColor: 0x9fb4ff, sunY: 6 },    // night
+  { at: 0.80, sky: 0x1b2350, ambient: 0.50, sun: 0.8, sunColor: 0x8fa8ff, sunY: 7 },
+  { at: 0.92, sky: 0xf7b58a, ambient: 1.00, sun: 1.5, sunColor: 0xffc890, sunY: 4 },    // dawn
+  { at: 1.00, sky: 0x72d8ff, ambient: 1.35, sun: 1.9, sunColor: 0xffffff, sunY: 10 },
+];
 
 // Vehicle body colours, cycled per spawn.
 export const VEHICLE_COLORS = [

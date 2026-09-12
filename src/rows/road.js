@@ -41,10 +41,21 @@ export function createRoadRow(desc) {
     return { ...v, mesh, x: v.x0 };
   });
 
+  // A bark freezes the lane: while frozen, the lane's own clock stops (the
+  // offset accumulates), so positions stay a pure function of lane time.
+  let lastT = 0, tOffset = 0, frozenUntil = -1, flinchAt = -1;
+
   function update(t) {
+    const dt = t - lastT;
+    lastT = t;
+    if (t < frozenUntil && dt > 0) tOffset += dt;
+    const te = t - tOffset;
+    const f = t - flinchAt;
+    const flinch = (f >= 0 && f < 0.3) ? 0.16 * Math.sin(Math.PI * f / 0.3) : 0;
     for (const v of vehicles) {
-      v.x = wrapLane(v.x0 + desc.dir * desc.speed * t, LANE_HALF);
+      v.x = wrapLane(v.x0 + desc.dir * desc.speed * te, LANE_HALF);
       v.mesh.position.x = v.x;
+      v.mesh.position.y = flinch;
     }
   }
   update(0);
@@ -54,6 +65,8 @@ export function createRoadRow(desc) {
     group,
     vehicles,
     update,
+    get frozen() { return lastT < frozenUntil; },
+    freeze(t, seconds) { frozenUntil = Math.max(frozenUntil, t + seconds); flinchAt = t; },
     dispose() { group.removeFromParent(); },
   };
 }

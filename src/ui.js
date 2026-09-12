@@ -10,7 +10,7 @@ const DEATH_COPY = {
   squashed: 'OUCH',
   drowned: 'SPLASH',
   trainHit: 'CHOO CHOO',
-  eagle: 'BIRD!',
+  abducted: 'ABDUCTED!',
 };
 
 export function createUI(root, h) {
@@ -35,9 +35,15 @@ export function createUI(root, h) {
       </div>
       <div class="card title-bottom">
         <div class="card-hint pulse">tap or press space to fetch</div>
+        <div class="controls" id="controls"></div>
         <div class="picker" id="picker"></div>
       </div>
     </div>
+
+    <button class="bark-btn" id="btn-bark" aria-label="Bark (B)" title="Bark (B)"><span class="bark-fill" id="bark-fill"></span><span class="bark-face">🐶</span><span class="bark-label">BARK</span></button>
+    <div class="hint-bar" id="hintbar" hidden></div>
+    <div class="toast" id="toast" hidden><div class="toast-title" id="toast-title"></div><div class="toast-sub" id="toast-sub"></div></div>
+    <div class="combo" id="combo" hidden></div>
 
     <div class="overlay" id="pause" hidden>
       <div class="card">
@@ -66,6 +72,8 @@ export function createUI(root, h) {
     title: $('title'), titleBest: $('title-best'), titleBalls: $('title-balls'), picker: $('picker'),
     pause: $('pause'), resume: $('btn-resume'),
     gameover: $('gameover'), goTitle: $('go-title'), goScore: $('go-score'), goBest: $('go-best'), goNew: $('go-new'), goBalls: $('go-balls'), outfits: $('btn-outfits'),
+    controls: $('controls'), barkBtn: $('btn-bark'), barkFill: $('bark-fill'), hintbar: $('hintbar'),
+    toast: $('toast'), toastTitle: $('toast-title'), toastSub: $('toast-sub'), combo: $('combo'),
   };
 
   const stop = (fn) => (e) => { e.preventDefault(); e.stopPropagation(); fn(); };
@@ -73,9 +81,11 @@ export function createUI(root, h) {
   els.muteBtn.addEventListener('pointerup', stop(() => h.onMute()));
   els.resume.addEventListener('pointerup', stop(() => h.onPause()));
   els.outfits.addEventListener('pointerup', stop(() => h.onOutfits()));
-  for (const b of [els.pauseBtn, els.muteBtn, els.resume, els.outfits]) b.addEventListener('pointerdown', (e) => e.stopPropagation());
+  els.barkBtn.addEventListener('pointerup', stop(() => h.onBark && h.onBark()));
+  for (const b of [els.pauseBtn, els.muteBtn, els.resume, els.outfits, els.barkBtn]) b.addEventListener('pointerdown', (e) => e.stopPropagation());
 
-  let lastScore = -1, lastBest = -1, lastBalls = -1;
+  let lastScore = -1, lastBest = -1, lastBalls = -1, lastCharge = -1;
+  let toastTimer = null, comboTimer = null;
 
   function renderPicker(ballsTotal, equipped) {
     els.picker.innerHTML = '';
@@ -98,6 +108,44 @@ export function createUI(root, h) {
     setBalls(n) { if (n !== lastBalls) { lastBalls = n; els.balls.textContent = String(n); } },
     setMuted(m) { els.muteBtn.textContent = m ? '×' : '♪'; els.muteBtn.classList.toggle('off', m); },
     setHudVisible(v) { $('hud').hidden = !v; },
+
+    /** 0..1 — the bark button fills back up over the cooldown. */
+    setBarkCharge(f) {
+      const q = Math.round(f * 40) / 40;
+      if (q === lastCharge) return;
+      lastCharge = q;
+      els.barkFill.style.height = (q * 100) + '%';
+      els.barkBtn.classList.toggle('ready', q >= 1);
+    },
+    setBarkVisible(v) { els.barkBtn.hidden = !v; },
+    setControls(text) { els.controls.textContent = text; },
+    showHint(text) { els.hintbar.textContent = text; els.hintbar.hidden = false; },
+    hideHint() { els.hintbar.hidden = true; },
+
+    /** A big centred announcement that fades on its own. */
+    toast(title, sub = '', ms = 1800) {
+      els.toastTitle.textContent = title;
+      els.toastSub.textContent = sub;
+      els.toastSub.hidden = !sub;
+      els.toast.hidden = false;
+      els.toast.classList.remove('in');
+      void els.toast.offsetWidth;          // restart the animation
+      els.toast.classList.add('in');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { els.toast.hidden = true; }, ms);
+    },
+
+    /** ×N COMBO pop near the score. */
+    showCombo(n) {
+      if (n < 2) { els.combo.hidden = true; return; }
+      els.combo.textContent = '×' + n + ' COMBO';
+      els.combo.hidden = false;
+      els.combo.classList.remove('in');
+      void els.combo.offsetWidth;
+      els.combo.classList.add('in');
+      clearTimeout(comboTimer);
+      comboTimer = setTimeout(() => { els.combo.hidden = true; }, 1400);
+    },
 
     showTitle({ best, ballsTotal, equipped }) {
       els.titleBest.textContent = 'BEST ' + best;

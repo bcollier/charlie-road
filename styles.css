@@ -166,6 +166,85 @@ html, body {
 .card-balls { font-size: clamp(15px, 4.5cqi, 28px); margin-top: 0.5em; color: var(--ball); display: flex; align-items: center; justify-content: center; gap: 0.35em; }
 .ball-icon.small { width: 0.8em; height: 0.8em; }
 
+/* ---- Bark button ------------------------------------------------------- */
+.bark-btn {
+  pointer-events: auto;
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: clamp(64px, 18cqi, 84px);
+  height: clamp(64px, 18cqi, 84px);
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 0 5px 0 var(--ink);
+  overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.06s, box-shadow 0.06s;
+}
+.bark-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.bark-btn .bark-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; background: var(--ball); transition: height 0.1s linear; }
+.bark-btn .bark-face { position: relative; font-size: clamp(26px, 7cqi, 34px); line-height: 1; filter: grayscale(1) opacity(0.45); }
+.bark-btn .bark-label { position: relative; font-size: 10px; font-weight: 900; letter-spacing: 0.1em; color: var(--ink); opacity: 0.55; }
+.bark-btn.ready .bark-face { filter: none; animation: wag 0.6s ease-in-out infinite alternate; }
+.bark-btn.ready .bark-label { opacity: 1; }
+@keyframes wag { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+
+/* ---- Controls line, first-run hint, toast, combo ------------------------- */
+.controls { font-size: clamp(11px, 3cqi, 15px); margin-top: 0.7em; opacity: 0.95; letter-spacing: 0.06em; text-transform: uppercase; }
+.hint-bar {
+  position: absolute; left: 50%; bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: calc(100% - 140px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(27, 27, 42, 0.72);
+  color: #fff;
+  font-size: clamp(11px, 3cqi, 14px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast {
+  position: absolute; left: 50%; top: 30%;
+  transform: translate(-50%, -50%) scale(0.6);
+  text-align: center;
+  color: #fff;
+  font-weight: 900;
+  text-shadow:
+    -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink), 3px 3px 0 var(--ink),
+    0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink);
+  opacity: 0;
+}
+.toast.in { animation: toast-in 1.8s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+.toast-title { font-size: clamp(30px, 11cqi, 72px); color: var(--ball); line-height: 1; }
+.toast-sub { font-size: clamp(14px, 4cqi, 24px); margin-top: 0.3em; }
+@keyframes toast-in {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  20%  { transform: translate(-50%, -50%) scale(1); }
+  80%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(1); }
+}
+.combo {
+  position: absolute; left: max(16px, env(safe-area-inset-left)); top: calc(max(14px, env(safe-area-inset-top)) + clamp(64px, 18cqi, 110px));
+  color: var(--ball);
+  font-size: clamp(18px, 5.5cqi, 34px);
+  font-weight: 900;
+  text-shadow:
+    -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink), 3px 3px 0 var(--ink),
+    0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px 0 0 var(--ink), 3px 0 0 var(--ink);
+}
+.combo.in { animation: combo-in 1.4s ease-out forwards; }
+@keyframes combo-in { 0% { transform: scale(0.6); opacity: 0; } 15% { transform: scale(1.15); opacity: 1; } 30% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+
 @container (max-width: 480px) {
   .chip { width: 76px; }
   .hud-btn { width: 40px; height: 40px; }

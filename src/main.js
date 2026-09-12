@@ -13,7 +13,8 @@ import { createCamera } from './camera.js';
 import { createInput } from './input.js';
 import { createWorld } from './world.js';
 import { createRiverSystem } from './river.js';
-import { createEagleSystem } from './eagle.js';
+import { createSaucerSystem } from './saucer.js';
+import { createBark } from './bark.js';
 import { createAudio } from './audio.js';
 import { createParticles } from './particles.js';
 import { createUI } from './ui.js';
@@ -31,7 +32,7 @@ const DEBUG = params.get('debug') === '1';
 const FIXED_SEED = params.has('seed') ? Number(params.get('seed')) : null;
 
 // Seconds each death plays out before the game-over card.
-const DEATH_HOLD = { squashed: 0.9, drowned: 0.9, trainHit: 1.0, eagle: 1.7 };
+const DEATH_HOLD = { squashed: 0.9, drowned: 0.9, trainHit: 1.0, abducted: 1.9 };
 
 // ---- State ------------------------------------------------------------------
 export const state = {
@@ -65,31 +66,56 @@ const ui = createUI(document.getElementById('ui'), {
   onMute: () => { audio.unlock(); ui.setMuted(audio.toggleMute()); },
   onOutfits: () => enterTitle(),
   onEquip: (id) => equip(id),
+  onBark: () => doBark(),
 });
 const charlie = createCharlie();
 scene.add(charlie.root);
+// Unlock thresholds can change between versions: drop anything no longer earned.
+for (const slot of SLOTS) {
+  if (state.equipped[slot] && !isUnlocked(state.equipped[slot], state.ballsTotal)) state.equipped[slot] = null;
+}
 applyAccessories(charlie, state.equipped);
 
 // ---- Hooks the player state machine needs ---------------------------------
-const river = createRiverSystem(world, (type) => die(type));
-const eagle = createEagleSystem(scene, (type) => die(type));
 const audio = createAudio();
 const particles = createParticles(scene);
+const river = createRiverSystem(world, (type) => die(type));
+const saucer = createSaucerSystem(scene, (type) => die(type), audio);
+const bark = createBark({ world, audio, particles, saucer });
+const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const CONTROLS_TEXT = IS_TOUCH
+  ? 'Tap to hop · Swipe to steer · Shake or 🐶 to bark'
+  : '↑ ↓ ← → or W A S D to move · B to bark · P pause · M mute';
 const hooks = {
   time: 0,
   minRow: 0,
   canMoveTo: (x, row) => world.canMoveTo(x, row),
   isWater: (row) => world.isWater(row),
   onLanded: (p) => river.onLanded(p),
-  onHop: (p) => audio.hop(p.hopsChained),
+  onHop: (p) => { audio.hop(p.hopsChained); if (++hopsThisRun === 8) ui.hideHint(); },
   onBlocked: () => audio.blocked(),
 };
 
 // ---- Input ------------------------------------------------------------------
 // A move or tap starts the game from the title (and counts as the first hop),
 // restarts from game over, and is ignored while paused or dying.
-function onMoveInput(dir) {
+// Shake-to-bark. On iOS the motion permission prompt must come from a tap,
+// so it is requested on the first gesture of the session.
+const shake = bark.installShake(() => doBark());
+let shakeRequested = false;
+function firstGesture() {
   audio.unlock();
+  if (!shakeRequested && shake.needsGesture) { shakeRequested = true; shake.request(); }
+}
+
+function doBark() {
+  firstGesture();
+  if (state.phase !== 'playing') return;
+  bark.bark(state.time, state.player);
+}
+
+function onMoveInput(dir) {
+  firstGesture();
   switch (state.phase) {
     case 'title': startGame(); queueMove(state.player, dir); break;
     case 'playing': queueMove(state.player, dir); break;
@@ -99,9 +125,10 @@ function onMoveInput(dir) {
 createInput({
   onMove: onMoveInput,
   onTap: () => onMoveInput('up'),
-  onAction: () => { audio.unlock(); if (state.phase === 'title') startGame(); else if (state.phase === 'gameover') restart(); else if (state.phase === 'paused') togglePause(); },
+  onAction: () => { firstGesture(); if (state.phase === 'title') startGame(); else if (state.phase === 'gameover') restart(); else if (state.phase === 'paused') togglePause(); },
   onPause: () => togglePause(),
   onMute: () => { audio.unlock(); ui.setMuted(audio.toggleMute()); },
+  onBark: () => doBark(),
 }, canvas);
 
 function enterTitle() {
@@ -109,16 +136,22 @@ function enterTitle() {
   state.phase = 'title';
   state.player.facingAngle = Math.PI;          // face the viewer on the title
   ui.hideGameOver();
+  ui.hideHint();
   ui.setHudVisible(false);                     // the title carries its own best/balls
+  ui.setControls(CONTROLS_TEXT);
   ui.showTitle({ best: state.best, ballsTotal: state.ballsTotal, equipped: state.equipped });
 }
 
+let hopsThisRun = 0;
 function startGame() {
   if (state.phase !== 'title') return;
   state.phase = 'playing';
   state.player.idle = 0;
+  hopsThisRun = 0;
   ui.hideTitle();
   ui.setHudVisible(true);
+  // Keep the controls on screen for the first few hops of a fresh visit.
+  if (state.plays < 3) ui.showHint(CONTROLS_TEXT);
 }
 
 function togglePause() {
@@ -153,7 +186,7 @@ function die(type) {
     case 'squashed': audio.squash(); particles.spawn('puff', p.px, 0.1, p.pz); break;
     case 'drowned':  audio.splash(); particles.spawn('splash', p.px, 0.05, p.pz); break;
     case 'trainHit': audio.squash(); audio.whoosh(); particles.spawn('fur', p.px, 0.4, p.pz); break;
-    case 'eagle':    audio.eagleScreech(); break;
+    case 'abducted': break;   // the saucer system plays its own beam-up
   }
 }
 
@@ -186,7 +219,8 @@ function reset(seed) {
   ui.setScore(0);
   world.reset(seed);
   cam.reset();
-  eagle.reset();
+  saucer.reset();
+  bark.reset();
   particles.clear();
   trainAudio.lastDing = -1;
   trainAudio.hornedAt.clear();
@@ -290,7 +324,8 @@ function step(dt) {
     if (state.phase === 'playing') {
       checkBalls(p);
       checkTrainSounds(p);
-      eagle.update(dt, p, idleLimit(state.score), cam.trailingRow());
+      saucer.update(dt, p, idleLimit(state.score), cam.trailingRow(), state.time);
+      ui.setBarkCharge(bark.charge(state.time));
     }
     cam.update(dt, p, difficulty(state.score).autoScroll);
     ensureWorld(p);
@@ -310,9 +345,8 @@ function step(dt) {
         p.px = p.x + state.death.dir * 3.2 * t;
         p.scale = [1, 1, 1];
         break;
-      case 'eagle':
-        p.scale = [1, 1, 1];
-        eagle.updateDying(p, t, state.time);
+      case 'abducted':
+        saucer.updateDying(p, t, state.time);
         break;
       default: {
         // Squash: flatten fast, spread a little.
@@ -341,8 +375,10 @@ function step(dt) {
     facingAngle: p.facingAngle,
     title: state.phase === 'title',
   });
-  // Train hit: tumble end over end while airborne.
-  charlie.root.rotation.z = (state.phase === 'dying' && state.death.type === 'trainHit') ? state.death.t * 16 : 0;
+  // Train hit: tumble end over end while airborne. Abducted: spin as he rises.
+  const dying = state.phase === 'dying';
+  charlie.root.rotation.z = (dying && state.death.type === 'trainHit') ? state.death.t * 16 : 0;
+  if (dying && state.death.type === 'abducted') charlie.root.rotation.y += p.spinY || 0;
 }
 
 function render() {
@@ -407,7 +443,8 @@ if (DEBUG) {
       return out.join('');
     },
     errors,
-    view, cam, world, charlie, eagle, river, audio, particles, ui, storage, THREE,
+    bark: () => doBark(),
+    view, cam, world, charlie, saucer, barkSys: bark, river, audio, particles, ui, storage, THREE,
   };
   const hud = document.createElement('div');
   hud.id = 'debug';
