@@ -8,7 +8,7 @@
 
 > **GOAL — done when all five hold:**
 > 1. Every task checkbox in §11 is ticked.
-> 2. Every acceptance criterion in §10 is verified (A1–A23).
+> 2. Every acceptance criterion in §10 is verified (A1–A24).
 > 3. `node tests/run.js` exits 0 with zero failures.
 > 4. A 90-second play session produces zero uncaught exceptions and zero console errors, at ≥50 fps on desktop.
 > 5. The game is deploy-ready for GitHub Pages: `.nojekyll` present, every path relative, no build step, and it runs correctly when served over plain HTTP (verify with any static server, e.g. `python3 -m http.server 8000`).
@@ -365,7 +365,33 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 - Shadow map 2048 desktop / 1024 mobile; the shadow camera is a tight ortho box following the camera target.
 - `devicePixelRatio` clamped to 2.
 - Target: ≥50 fps desktop, ≥30 fps on a mid-range phone, ≤120 draw calls in a typical frame.
-- `?debug=1` overlays fps, draw calls, row types and hitboxes.
+
+---
+
+## 9a. Debug harness — required, and load-bearing for verification
+
+`?debug=1` overlays fps, draw calls, row types and hitboxes, **and exposes a control surface on `window.__game`:**
+
+```js
+window.__game = {
+  state,                  // live game state (read/write)
+  step(dt),               // advance the simulation by dt seconds, ONE fixed tick,
+                          // independent of requestAnimationFrame
+  steps(n, dt = 1/60),    // advance n fixed ticks
+  input(dir),             // queue a move: 'up' | 'down' | 'left' | 'right'
+  reset(seed),            // restart deterministically from a seed
+  stats(),                // { fps, drawCalls, rows, entities }
+  errors                  // array of everything caught by window.onerror
+}
+```
+
+**Why this is mandatory rather than nice-to-have.** A browser tab that is not the foreground tab reports `document.visibilityState === "hidden"`, and Chrome stops firing `requestAnimationFrame` in it entirely. Screenshots of such a tab still succeed — they just show a **frozen** frame. Verified in this session against v1: after seven `ArrowUp` presses the player had not moved and `pendingMove` sat unconsumed, purely because the tab was backgrounded.
+
+Every time-dependent acceptance criterion — traffic movement (A6), log drift (A7), the train cycle (A8), the eagle timers (A9), auto-scroll (A10), ball bounce (A11), the celebration (A12) — would silently appear to pass while nothing was actually running. **Do not verify any of these from screenshots alone.** Drive them through `__game.steps()` and assert on `__game.state`, which works regardless of tab visibility, then use screenshots for appearance only.
+
+The main loop must therefore route all simulation through the same fixed-step function `step(dt)` that this exposes, with `requestAnimationFrame` only deciding *when* and *how many times* to call it. That is good practice anyway — it makes the physics frame-rate independent and the whole game reproducible from a seed.
+
+`__game` is created **only** when `?debug=1` is present, so the shipped game has no such surface.
 
 ---
 
@@ -394,8 +420,9 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 | A19 | Playable on a phone: tap + swipe, correct layout at 390×844 portrait and landscape | Device/emulator |
 | A20 | All §6 invariants hold over 2,000 generated rows across 50 seeds | `node tests/run.js` |
 | A21 | Zero console errors in a 90-second session; ≥50 fps desktop | `?debug=1` |
-| A22 | Served over plain HTTP it runs with **zero** network requests beyond the origin — no CDN, no fonts, no analytics | DevTools Network, via any static server |
-| A23 | v1 preserved at `v1/index.html` and still opens | Open it |
+| A22 | `?debug=1` exposes `window.__game` with a working `step`/`steps`/`input`/`reset`/`stats`; stepping advances the simulation in a **backgrounded** tab | `__game.steps(60)` then assert state changed |
+| A23 | Served over plain HTTP it runs with **zero** network requests beyond the origin — no CDN, no fonts, no analytics | DevTools Network, via any static server |
+| A24 | v1 preserved at `v1/index.html` and still opens | Open it |
 
 ---
 
@@ -407,6 +434,8 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 - [ ] Vendor `three.module.js` r186 into `vendor/`
 - [ ] `config.js`, `palette.js`
 - [ ] `scene.js`: renderer, ortho camera rig (§3.1), ambient + directional light, shadow frustum, resize
+- [ ] Fixed-step main loop: all simulation through `step(dt)`; rAF only decides when and how many times to call it
+- [ ] `?debug=1` harness exposing `window.__game` per §9a (A22) — build it now; every later time-dependent criterion depends on it
 - [ ] One grass row + placeholder cube; **verify A1 against the reference** — do not proceed until it matches
 - [ ] Commit
 
@@ -466,7 +495,7 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 - [ ] Perf pass to §9 targets; quality toggle
 - [ ] Mobile test 390×844 portrait + landscape (A19)
 - [ ] `node tests/run.js` green (A20)
-- [ ] 90-second clean session (A21), local server check (A22), v1 check (A23)
+- [ ] 90-second clean session (A21), harness check (A22), local server check (A23), v1 check (A24)
 - [ ] README, milestone screenshots for `development_log.docx`, prompt log updated
 - [ ] Final commit and `git push origin rebuild` — **do not merge to `main`, do not make the repo public, do not enable Pages**
 
