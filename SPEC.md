@@ -23,7 +23,11 @@
 
 ## 1. Product
 
-A *Crossy Road* replica starring **Charlie**, an English springer spaniel, who hops forward through endless roads, rivers and railways, fetching **bouncing tennis balls** and doing a spin of delight each time. Endless, score = rows advanced, high score saved in the browser.
+A *Crossy Road* replica starring **Charlie**, an American cocker spaniel: a fun-loving dog with attitude who lives for chasing tennis balls — wherever that may take him.
+
+Which, here, is straight across eight lanes of traffic. He hops forward through endless roads, rivers and railways, fetching **bouncing tennis balls** and doing a spin of delight each time he gets one. Endless, score = rows advanced, high score saved in the browser.
+
+**Charlie's attitude is a design requirement, not flavour text.** It should be legible in how he moves: a cocky head-tilt when he's kept waiting, a tail that never stops, a celebration that is frankly too much for one tennis ball. He is not a cautious animal. The game should feel like it is barely keeping up with him.
 
 **Platform:** static site, GitHub Pages, no build step. Desktop keyboard + mobile touch.
 
@@ -69,7 +73,7 @@ src/
     eagle.js          idleLimit(score)
 tests/run.js          plain node, no deps, exit 1 on failure
 v1/index.html         the 30-minute build, preserved
-reference/            gitignored
+reference/            tracked — gameplay screenshots + photos of Charlie
 ```
 
 **Hard rule:** nothing in `src/rules/` may import three.js or touch the DOM. Everything else may.
@@ -203,29 +207,46 @@ Animated parts get their own group so they can transform independently.
 
 ### 4.1 Charlie
 
-Facing **−Z** (away from camera). Overall ~0.62 w × 0.90 d × 0.75 h.
+**American cocker spaniel**, liver and white. Facing **−Z** (away from camera). Overall ~0.62 w × 0.82 d × 0.78 h.
+
+The four silhouette cues that make him read as a cocker rather than a springer — get these right and the rest is detail:
+
+1. **Domed skull.** Rounded and tall, not flat.
+2. **Very short muzzle with a pronounced stop** — a sharp step down from the brow. A long muzzle reads as a springer instantly.
+3. **Long, low-set, heavily feathered ears** that hang well below the jaw.
+4. **Large, round, prominent eyes.**
+
+Plus a compact short-backed body with feathering (the "skirt") along the belly and legs.
 
 **Group `root`**
-- `body`   (0, 0.22, 0.02) size (0.44, 0.30, 0.62) — FUR_WHITE
-- `saddle` (0, 0.375, 0.10) size (0.46, 0.06, 0.34) — LIVER
-- `legFL` (−0.15, 0.06, −0.20) size (0.11, 0.14, 0.11) — FUR_WHITE
-- `legFR` (+0.15, 0.06, −0.20) · `legBL` (−0.15, 0.06, +0.20) · `legBR` (+0.15, 0.06, +0.20)
-- `collar` (0, 0.40, −0.22) size (0.37, 0.06, 0.26) — COLLAR
-- `tag`    (0, 0.36, −0.345) size (0.05, 0.05, 0.03) — TAG
+- `body`   (0, 0.21, 0.04) size (0.44, 0.30, 0.54) — FUR_WHITE
+- `skirt`  (0, 0.09, 0.06) size (0.48, 0.10, 0.50) — FUR_WHITE (belly feathering; slightly wider than `body`)
+- `saddle` (0, 0.365, 0.10) size (0.46, 0.06, 0.30) — LIVER
+- `legFL` (−0.15, 0.06, −0.17) size (0.12, 0.14, 0.12) — FUR_WHITE
+- `legFR` (+0.15, 0.06, −0.17) · `legBL` (−0.15, 0.06, +0.19) · `legBR` (+0.15, 0.06, +0.19)
+- `collar` (0, 0.40, −0.20) size (0.37, 0.06, 0.24) — COLLAR
+- `tag`    (0, 0.36, −0.325) size (0.05, 0.05, 0.03) — TAG
 
-**Group `head`** at (0, 0.46, −0.30), coordinates local to it
-- `skull`  (0, 0.10, 0) size (0.34, 0.28, 0.30) — LIVER
-- `blaze`  (0, 0.12, −0.152) size (0.10, 0.26, 0.02) — FUR_WHITE
-- `muzzle` (0, 0.02, −0.20) size (0.18, 0.14, 0.14) — FUR_WHITE
-- `nose`   (0, 0.06, −0.275) size (0.09, 0.07, 0.04) — NOSE
-- `eyeL/R` (∓0.10, 0.16, −0.152) size (0.05, 0.05, 0.02) — EYE, each with a (0.02)³ FUR_WHITE glint
-- `tongue` (0, −0.03, −0.24) size (0.07, 0.03, 0.12) — TONGUE (hidden unless celebrating)
+**Group `head`** at (0, 0.46, −0.28), coordinates local to it
+- `skull`  (0, 0.11, 0) size (0.34, 0.30, 0.28) — LIVER
+- `dome`   (0, 0.27, 0.01) size (0.28, 0.07, 0.22) — LIVER (rounds the crown — cue 1)
+- `blaze`  (0, 0.14, −0.142) size (0.10, 0.28, 0.02) — FUR_WHITE
+- `muzzle` (0, −0.01, −0.17) size (0.19, 0.12, 0.10) — FUR_WHITE (short and set low — cue 2)
+- `nose`   (0, 0.02, −0.235) size (0.10, 0.08, 0.04) — NOSE
+- `eyeL/R` (∓0.10, 0.14, −0.145) size (0.07, 0.07, 0.02) — EYE (cue 4), each with a (0.025)³ FUR_WHITE glint set to the upper-outer corner
+- `tongue` (0, −0.05, −0.21) size (0.07, 0.03, 0.11) — TONGUE (hidden unless celebrating or idle-panting)
 
-**Group `earL`** pivot (−0.175, 0.20, −0.02) in head space; box (0, −0.17, 0) size (0.08, 0.34, 0.22) — LIVER_DARK. `earR` mirrored.
+**Group `earL`** pivot (−0.175, 0.16, −0.01) in head space — low-set (cue 3)
+- `ear`     (0, −0.21, 0) size (0.09, 0.42, 0.24) — LIVER_DARK
+- `feather` (0, −0.40, 0.01) size (0.11, 0.11, 0.22) — LIVER_DARK (the wavy flare at the tip)
 
-**Group `tail`** pivot (0, 0.34, 0.31) in root space; box (0, 0.06, 0.06) size (0.09, 0.16, 0.09) — LIVER.
+`earR` mirrored.
 
-**Group `mouthBall`** parented to `head` at (0, −0.02, −0.30), shared ball geometry (§4.3) at 0.16 scale. Visible whenever `ballsThisRun > 0`.
+**Group `tail`** pivot (0, 0.34, 0.28) in root space; box (0, 0.06, 0.06) size (0.09, 0.15, 0.09) — LIVER. Docked short and carried level, as in the photos.
+
+**Group `mouthBall`** parented to `head` at (0, −0.04, −0.26), shared ball geometry (§4.3) at 0.16 scale. Visible whenever `ballsThisRun > 0`.
+
+**Verification:** if he reads as a springer, the muzzle is too long or the ears are set too high. Compare against `reference/charlie/IMG_0467.jpeg` (head-on) and `IMG_8224.jpeg` (full body).
 
 ### 4.2 Accessories
 
@@ -234,7 +255,7 @@ Four accessories, each modelled from a photo in `reference/charlie/`, each built
 | Item | Slot | Parent | Cost (balls) | Reference | Geometry |
 |---|---|---|---|---|---|
 | **Bandana** | neck | `root` | 10 | `IMG_8224` | Triangle bib below the collar: plate (0, 0.36, −0.26) size (0.34, 0.16, 0.04) plus a tapering stack of 3 plates descending to (0, 0.20, −0.24) — BANDANA, with 4 scattered (0.03)³ BANDANA_SPOT cubes for the heart print |
-| **Sunglasses** | head | `head` | 25 | `IMG_2100` | Bridge (0, 0.16, −0.16) size (0.30, 0.04, 0.03) — SHADES_FRAME; two lenses (∓0.10, 0.15, −0.175) size (0.11, 0.09, 0.02) — SHADES_LENS; two temples (∓0.16, 0.16, −0.08) size (0.02, 0.03, 0.16) — SHADES_FRAME |
+| **Sunglasses** | head | `head` | 25 | `IMG_2100` | Bridge (0, 0.15, −0.148) size (0.30, 0.04, 0.03) — SHADES_FRAME; two lenses (∓0.10, 0.13, −0.158) size (0.12, 0.10, 0.02) — SHADES_LENS (sized to the cocker's larger eyes); two temples (∓0.165, 0.14, −0.07) size (0.02, 0.03, 0.16) — SHADES_FRAME |
 | **Bow tie** | neck | `root` | 50 | `IMG_6040` | Centre knot (0, 0.38, −0.35) size (0.05, 0.06, 0.04); two wings (∓0.08, 0.38, −0.345) size (0.10, 0.10, 0.03) — all BOWTIE |
 | **Sweater** | body | `root` | 100 | `IMG_8789` | Six alternating horizontal bands wrapping the body, each (0, 0.22, z) size (0.47, 0.33, 0.09) for z from −0.22 to +0.28 in steps of 0.10 — alternating SWEATER_RED / SWEATER_WHITE. Renders slightly larger than `body` so it reads as worn over the fur |
 
@@ -255,7 +276,8 @@ Horizontal lerp; vertical `sin(π·t)·HOP_HEIGHT`. Landing squash for `SQUASH_T
 
 ### 5.2 Ear and tail animation
 - **Ears**: rotate about local X by `clamp(-0.55 · dY/dt, -0.9, 0.9)` plus a damped spring (ω 18, ζ 0.35), so they lift on the rise and trail on the fall. Small outward Z-roll proportional to lateral velocity.
-- **Tail**: continuous sine wag — 6 Hz / 0.25 rad idle, 14 Hz / 0.50 rad while celebrating.
+- **Tail**: continuous sine wag — 6 Hz / 0.25 rad idle, 14 Hz / 0.50 rad while celebrating. It never fully stops.
+- **Idle attitude**: after 1.2 s without input, Charlie does the cocker head-tilt — `head.rotation.z` to ±0.35 rad over 0.25 s, held, alternating sides on each repeat, with the tongue showing. It cancels the instant a move is queued. This is the main carrier of his personality during the dead time before the player commits to a gap, and it doubles as a readable tell that the eagle timer is running.
 
 ### 5.3 Movement rules
 Blocked by trees, rocks, field bounds, and moving back past the camera's trailing row. Moving *onto* a road or river is always permitted; death resolves on landing.
@@ -349,9 +371,9 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 | # | Criterion | How it's verified |
 |---|---|---|
 | A1 | Lanes tilt ≈13° down-right; the scene reads as Crossy Road | Side-by-side with `reference/cr_s031.png` |
-| A2 | Charlie is recognisably a liver-and-white springer: droopy ears, white blaze, brown saddle, wagging tail | Visual |
+| A2 | Charlie is recognisably an **American cocker spaniel** — domed skull, short muzzle, long low ears, big round eyes — not a springer | Visual, against `reference/charlie/IMG_0467.jpeg` |
 | A3 | Charlie reads clearly against grass **and** asphalt | Visual, on a road row |
-| A4 | Ears swing on the hop; tail wags | Visual |
+| A4 | Ears swing on the hop; tail always wags; the idle head-tilt fires after 1.2 s | Visual |
 | A5 | Hop is one tile per input, 0.16 s, with an arc and landing squash; rapid taps chain | Play |
 | A6 | All four terrain types generate and behave per §5 | Play + tests |
 | A7 | Logs carry Charlie at fractional X; missing one drowns him; drifting off-field kills | Play + tests |

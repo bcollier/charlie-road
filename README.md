@@ -1,6 +1,8 @@
 # Charlie Road
 
-A *Crossy Road* replica starring **Charlie**, an English springer spaniel, who hops through endless roads, rivers and railways fetching bouncing tennis balls — and does a spin of delight every time he gets one.
+A *Crossy Road* replica starring **Charlie**, an American cocker spaniel: a fun-loving dog with attitude who lives for chasing tennis balls — wherever that may take him.
+
+Which, here, is straight across eight lanes of traffic. He hops through endless roads, rivers and railways fetching bouncing tennis balls, and does a spin of delight every time he gets one.
 
 Static site. No build step. Hosted on GitHub Pages.
 
@@ -64,4 +66,6 @@ Already configured for GitHub Pages from `main` at the repo root (`.nojekyll` is
 
 ## Credits
 
-Built for **codingWithAI 15113**. *Crossy Road* is by Hipster Whale; this is a study replica, not affiliated with them. Charlie is a real dog and consented to nothing.
+Built for **codingWithAI 15113**. *Crossy Road* is by Hipster Whale; this is a study replica, not affiliated with them, and the screenshots in `reference/` are theirs, kept only as visual reference for the rebuild.
+
+Charlie is a real dog. He consented to nothing.

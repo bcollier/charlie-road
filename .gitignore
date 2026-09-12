@@ -1,7 +1,3 @@
-# Local reference material — dog photos and App Store screenshots.
-# Used during development, deliberately NOT published.
-reference/
-
 # OS / editor cruft
 .DS_Store
 ._*

@@ -1,6 +1,6 @@
 # Charlie Road — 4-Hour Rebuild Plan
 
-**Goal:** a faithful, polished *Crossy Road* replica starring Charlie the springer spaniel, fetching bouncing tennis balls, running as a static site on GitHub Pages with no build step.
+**Goal:** a faithful, polished *Crossy Road* replica starring Charlie — an American cocker spaniel with attitude who lives for chasing tennis balls, wherever that may take him — running as a static site on GitHub Pages with no build step.
 
 **Status:** planning only. Nothing has been built yet.
 **Authoritative build document:** [`SPEC.md`](SPEC.md). This file holds the research and rationale behind it.
@@ -84,14 +84,33 @@ Ballast #404754 · Sleepers #703939 · Sand #E5A967 · Vehicle white #D8EAFF
 
 ## 3. Charlie
 
-Reference photos in `reference/charlie/`. **English springer spaniel, liver and white.** The features that have to read at ~40 px on screen:
+Reference photos in `reference/charlie/`. **American cocker spaniel, liver and white.**
 
-1. **Long droopy brown ears** — his most distinctive feature, and a gift for animation. They'll swing on the hop arc and flare on the celebration spin.
-2. **White blaze** up the centre of the muzzle and forehead, splitting the brown.
+**Who he is:** a fun-loving dog with attitude who lives for chasing tennis balls, wherever that may take him. That last clause is the entire game design. He is not crossing eight lanes of traffic because he has weighed the risk — he's crossing because there's a ball over there. The player is not steering a cautious animal; they're barely keeping up with an enthusiastic one.
+
+That has to show in how he moves, not just in the README: a tail that never stops, a cocky head-tilt when he's kept waiting at a kerb, and a celebration that is frankly disproportionate to one tennis ball.
+
+**Cocker, not springer** — the distinction drives real geometry, and getting it wrong is the most likely way he ends up looking like a generic dog:
+
+| | Cocker (Charlie) | Springer |
+|---|---|---|
+| Skull | Domed, rounded, tall | Flatter |
+| Muzzle | **Short, with a pronounced stop** | Long |
+| Ears | Long, **low-set**, heavily feathered | Shorter, set higher |
+| Eyes | Large, round, prominent | Smaller, more almond |
+| Body | Compact, short-backed, feathered skirt | Longer, leggier |
+
+The short muzzle and low ear-set are the two that matter most at ~40 px. Full box geometry is in SPEC §4.1.
+
+The features that have to read at that size:
+
+1. **Long low droopy brown ears** — his signature, and a gift for animation. They swing on the hop arc and flare on the celebration spin.
+2. **Domed skull and short muzzle**, with a **white blaze** up the centre splitting the brown.
 3. **Mostly white body** with a **brown saddle patch** across the back.
-4. **Stubby tail** that wags — idle wag, fast wag on a ball pickup.
-5. **Pink tongue**, visible when he's excited.
-6. **He already carries a tennis ball in his mouth** in the figurine photo, so that's canon: Charlie holds a ball once he's fetched one.
+4. **Big round eyes** — most of the "attitude" lives here.
+5. **Short tail** that wags constantly, faster on a pickup.
+6. **Pink tongue**, out when he's excited or bored.
+7. **He already carries a tennis ball in his mouth** in the figurine photo, so that's canon: Charlie holds a ball once he's fetched one.
 
 Stylised palette (saturated up from the photos — Crossy Road's palette is flat and punchy, and the photos are shot in shade):
 
