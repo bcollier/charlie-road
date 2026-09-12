@@ -153,7 +153,9 @@ export function createCharlie() {
     // 57°, so a vertical face is foreshortened unless it tips back toward it.
     const lookUpGoal = s.title ? -0.6 : 0;
     tilt.up += (lookUpGoal - tilt.up) * Math.min(1, dt * 6);
-    head.rotation.set(tilt.up, tilt.turn, tilt.a);
+    // Playing with a toy: shake it side to side, the way he would.
+    const shake = s.shake ? 0.45 * Math.sin(s.time * 14) : 0;
+    head.rotation.set(tilt.up, tilt.turn + shake, tilt.a);
 
     tongue.visible = celebrating || (s.idle >= PLAYER.IDLE_TILT_AFTER && !s.moving);
     mouthBall.visible = !!s.carrying;

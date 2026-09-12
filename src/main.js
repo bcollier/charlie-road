@@ -21,9 +21,11 @@ import { createUI } from './ui.js';
 import { storage } from './storage.js';
 import { BALL } from './config.js';
 import { createCharlie } from './models/charlie.js';
-import { applyAccessories, isUnlocked, byId, SLOTS } from './models/accessories.js';
+import { applyAccessories, isUnlocked, byId, SLOTS, setUnlockAll } from './models/accessories.js';
 import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate, zoomiesActive } from './player.js';
 import { createUnlocks } from './unlocks.js';
+import { createCritters } from './critters.js';
+import { createDayCycle } from './daycycle.js';
 import { difficulty, idleLimit } from './rules/difficulty.js';
 import { aabb, playerBox, vehicleBox } from './rules/collide.js';
 import { stats as voxelStats } from './voxel.js';
@@ -32,6 +34,9 @@ import { GOLDEN, COMBO } from './config.js';
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
 const FIXED_SEED = params.has('seed') ? Number(params.get('seed')) : null;
+// ?enable_all_outfits=yes (or ?outfits=all): every outfit available, for testing the wardrobe.
+const ALL_OUTFITS = /^(yes|1|true)$/i.test(params.get('enable_all_outfits') || '') || params.get('outfits') === 'all';
+setUnlockAll(ALL_OUTFITS);
 
 // Seconds each death plays out before the game-over card.
 const DEATH_HOLD = { squashed: 0.9, drowned: 0.9, trainHit: 1.0, abducted: 1.9 };
@@ -87,6 +92,8 @@ const river = createRiverSystem(world, (type) => die(type));
 const saucer = createSaucerSystem(scene, (type) => die(type), audio);
 const bark = createBark({ world, audio, particles, saucer });
 const unlocks = createUnlocks({ scene, charlie, audio, particles, ui, storage, state });
+const critters = createCritters({ scene, world, charlie, audio, particles, ui, awardBalls: (n, x, z, p) => awardBalls(n, x, z, p), celebrate: (p) => celebrate(p) });
+const daycycle = createDayCycle(view);
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const CONTROLS_TEXT = IS_TOUCH
   ? 'Tap to hop · Swipe to steer · Shake or 🐶 to bark'
@@ -238,6 +245,8 @@ function reset(seed) {
   saucer.reset();
   bark.reset();
   unlocks.reset();
+  critters.reset();
+  daycycle.reset();
   particles.clear();
   trainAudio.lastDing = -1;
   trainAudio.hornedAt.clear();
@@ -342,6 +351,8 @@ function step(dt) {
   world.update(state.time);
 
   unlocks.update(dt, p, state.time);
+  critters.update(dt, p, state.time, cam.row, state.phase);
+  daycycle.update(state.score);
 
   if (state.phase === 'title') {
     // Traffic runs behind the card; Charlie idles (and does his head-tilt).
@@ -417,6 +428,7 @@ function step(dt) {
     facingAngle: p.facingAngle,
     title: state.phase === 'title',
     zoomies: zoomiesActive(p, state.time),
+    shake: critters.holdingToy,
   });
   // Train hit: tumble end over end while airborne. Abducted: spin as he rises.
   const dying = state.phase === 'dying';
@@ -488,7 +500,7 @@ if (DEBUG) {
     errors,
     bark: () => doBark(),
     awardBalls: (n) => awardBalls(n, state.player.px, state.player.pz, state.player),
-    view, cam, world, charlie, saucer, barkSys: bark, unlocks, river, audio, particles, ui, storage, THREE,
+    view, cam, world, charlie, saucer, barkSys: bark, unlocks, critters, daycycle, river, audio, particles, ui, storage, THREE,
   };
   const hud = document.createElement('div');
   hud.id = 'debug';

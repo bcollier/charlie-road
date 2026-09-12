@@ -152,7 +152,8 @@ export const SQUIRREL = {
   DASH_SPEED: 4.5,
   PAUSE: [0.3, 0.7],
   PANIC_RADIUS: 1.8,
-  PANIC_SPEED: 7.5,
+  PANIC_SPEED: 5.2,       // just under Charlie's hop speed: catchable with effort
+  PANIC_BOUNCES: 2,       // turns back at the field edge this many times, then escapes
   VALUE: 3,
 };
 

@@ -77,10 +77,14 @@ export function buildAccessoryMesh(id) {
   return BUILD[id] ? BUILD[id]() : null;
 }
 
-/** True once the lifetime total reaches the item's threshold. */
+let unlockAll = false;
+/** Debug: ?enable_all_outfits=yes makes every item available without earning it. */
+export function setUnlockAll(on) { unlockAll = !!on; }
+
+/** True once the lifetime total reaches the item's threshold (or everything is unlocked for testing). */
 export function isUnlocked(id, ballsTotal) {
   const a = byId(id);
-  return !!a && ballsTotal >= a.cost;
+  return !!a && (unlockAll || ballsTotal >= a.cost);
 }
 
 /**
