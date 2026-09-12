@@ -107,7 +107,8 @@ export function createCharlie() {
 
     // Ears: lag the vertical velocity, clamp, spring toward it. Lateral
     // velocity rolls both ears the opposite way; celebration flares them out.
-    const target = THREE.MathUtils.clamp(-0.55 * s.vy, -0.9, 0.9);
+    // Zoomies pin the ears back like a dog running flat out.
+    const target = THREE.MathUtils.clamp(-0.55 * s.vy, -0.9, 0.9) + (s.zoomies ? -0.7 : 0);
     for (const k of ['L', 'R']) {
       const e = ear[k];
       e.v += (K * (target - e.a) - C * e.v) * dt;

@@ -22,10 +22,12 @@ import { storage } from './storage.js';
 import { BALL } from './config.js';
 import { createCharlie } from './models/charlie.js';
 import { applyAccessories, isUnlocked, byId, SLOTS } from './models/accessories.js';
-import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate } from './player.js';
+import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate, zoomiesActive } from './player.js';
+import { createUnlocks } from './unlocks.js';
 import { difficulty, idleLimit } from './rules/difficulty.js';
 import { aabb, playerBox, vehicleBox } from './rules/collide.js';
 import { stats as voxelStats } from './voxel.js';
+import { GOLDEN, COMBO } from './config.js';
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
@@ -47,6 +49,8 @@ export const state = {
   plays: storage.get('plays', 0),
   death: null,        // { type, t }
   newBest: false,
+  combo: 0,           // chained pickups inside COMBO.WINDOW
+  lastPickupAt: -1e9,
   equipped: Object.assign({ head: null, neck: null, body: null }, storage.get('accessory', {})),
   player: createPlayer(),
 };
@@ -82,6 +86,7 @@ const particles = createParticles(scene);
 const river = createRiverSystem(world, (type) => die(type));
 const saucer = createSaucerSystem(scene, (type) => die(type), audio);
 const bark = createBark({ world, audio, particles, saucer });
+const unlocks = createUnlocks({ scene, charlie, audio, particles, ui, storage, state });
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const CONTROLS_TEXT = IS_TOUCH
   ? 'Tap to hop · Swipe to steer · Shake or 🐶 to bark'
@@ -93,6 +98,7 @@ const hooks = {
   isWater: (row) => world.isWater(row),
   onLanded: (p) => river.onLanded(p),
   onHop: (p) => { audio.hop(p.hopsChained); if (++hopsThisRun === 8) ui.hideHint(); },
+  onZoomies: (p) => { audio.zoomies(); ui.toast('ZOOMIES!', '', 1100); particles.spawn('dust', p.px, 0.1, p.pz); },
   onBlocked: () => audio.blocked(),
 };
 
@@ -118,6 +124,7 @@ function onMoveInput(dir) {
   firstGesture();
   switch (state.phase) {
     case 'title': startGame(); queueMove(state.player, dir); break;
+    case 'dressing':                     // buffered; fires the moment he's dressed
     case 'playing': queueMove(state.player, dir); break;
     case 'gameover': restart(); break;
   }
@@ -145,13 +152,20 @@ function enterTitle() {
 let hopsThisRun = 0;
 function startGame() {
   if (state.phase !== 'title') return;
-  state.phase = 'playing';
   state.player.idle = 0;
+  state.player.facingAngle = 0;
   hopsThisRun = 0;
   ui.hideTitle();
   ui.setHudVisible(true);
   // Keep the controls on screen for the first few hops of a fresh visit.
   if (state.plays < 3) ui.showHint(CONTROLS_TEXT);
+  // A newly earned outfit drops onto him first; moves tapped meanwhile are buffered.
+  if (unlocks.hasPending()) {
+    state.phase = 'dressing';
+    unlocks.startDressUp(state.player);
+  } else {
+    state.phase = 'playing';
+  }
 }
 
 function togglePause() {
@@ -182,6 +196,7 @@ function die(type) {
   p.hop = null;
   p.onPlatform = null;
   p.celebrate = -1;
+  state.combo = 0;
   switch (type) {
     case 'squashed': audio.squash(); particles.spawn('puff', p.px, 0.1, p.pz); break;
     case 'drowned':  audio.splash(); particles.spawn('splash', p.px, 0.05, p.pz); break;
@@ -217,10 +232,12 @@ function reset(seed) {
   state.phase = 'playing';
   ui.hideGameOver();
   ui.setScore(0);
+  state.combo = 0; state.lastPickupAt = -1e9;
   world.reset(seed);
   cam.reset();
   saucer.reset();
   bark.reset();
+  unlocks.reset();
   particles.clear();
   trainAudio.lastDing = -1;
   trainAudio.hornedAt.clear();
@@ -267,15 +284,29 @@ function checkBalls(p) {
     const dx = p.px - b.x, dz = p.pz - (-i);
     if (dx * dx + dz * dz < BALL.PICKUP_RADIUS * BALL.PICKUP_RADIUS) {
       b.collect();
-      state.ballsRun += 1;
-      state.ballsTotal += 1;
-      storage.set('ballsTotal', state.ballsTotal);
-      ui.setBalls(state.ballsTotal);
+      // Combo: chained pickups inside the window multiply the value (capped).
+      state.combo = (state.time - state.lastPickupAt <= COMBO.WINDOW) ? state.combo + 1 : 1;
+      state.lastPickupAt = state.time;
+      const mult = Math.min(state.combo, COMBO.MAX_MULT);
+      const value = (b.golden ? GOLDEN.VALUE : 1) * mult;
+      awardBalls(value, b.x, -i, p);
       celebrate(p);
-      particles.spawn('sparkle', b.x, 0.3, -i);
-      audio.ballPickup();
+      particles.spawn(b.golden ? 'gold' : 'sparkle', b.x, 0.3, -i);
+      if (b.golden) { audio.goldChime(); ui.toast('GOLDEN!', '+' + value + ' balls', 1300); }
+      audio.comboPickup(mult);
+      if (state.combo >= 2) ui.showCombo(state.combo);
     }
   }
+}
+
+/** Add balls to the run and lifetime totals, persist, and announce any unlock crossed. */
+function awardBalls(n, x, z, p) {
+  const prev = state.ballsTotal;
+  state.ballsRun += n;
+  state.ballsTotal += n;
+  storage.set('ballsTotal', state.ballsTotal);
+  ui.setBalls(state.ballsTotal);
+  unlocks.check(prev, state.ballsTotal, p);
 }
 
 // ---- Train sounds -----------------------------------------------------------
@@ -310,11 +341,20 @@ function step(dt) {
   const p = state.player;
   world.update(state.time);
 
+  unlocks.update(dt, p, state.time);
+
   if (state.phase === 'title') {
     // Traffic runs behind the card; Charlie idles (and does his head-tilt).
     p.idle += dt;
     p.px = p.x; p.py = 0; p.pz = -p.row;
     p.vx = 0; p.vy = 0;
+  } else if (state.phase === 'dressing') {
+    // The new outfit drops onto him; he puts it on and celebrates, then play begins.
+    p.px = p.x; p.py = p.celebrate >= 0 ? Math.sin(Math.PI * p.celebrate) * BALL.CELEBRATE_LIFT : 0; p.pz = -p.row;
+    p.vx = 0; p.vy = 0;
+    if (p.celebrate >= 0) { p.celebrate += dt / BALL.CELEBRATE_DURATION; if (p.celebrate >= 1) p.celebrate = -1; }
+    const done = unlocks.updateDressUp(dt, p, state.time, () => celebrate(p));
+    if (done) { state.phase = 'playing'; p.idle = 0; }
   } else if (state.phase === 'playing') {
     hooks.minRow = Math.max(0, Math.ceil(cam.trailingRow()));
     river.update(p);            // carry him on a log before the hop machine reads p.x
@@ -326,6 +366,8 @@ function step(dt) {
       checkTrainSounds(p);
       saucer.update(dt, p, idleLimit(state.score), cam.trailingRow(), state.time);
       ui.setBarkCharge(bark.charge(state.time));
+      if (state.combo && state.time - state.lastPickupAt > COMBO.WINDOW) state.combo = 0;
+      if (zoomiesActive(p, state.time) && state.frame % 2 === 0) particles.spawn('zoom', p.px, 0.25, p.pz + 0.3);
     }
     cam.update(dt, p, difficulty(state.score).autoScroll);
     ensureWorld(p);
@@ -374,6 +416,7 @@ function step(dt) {
     carrying: p.carrying,
     facingAngle: p.facingAngle,
     title: state.phase === 'title',
+    zoomies: zoomiesActive(p, state.time),
   });
   // Train hit: tumble end over end while airborne. Abducted: spin as he rises.
   const dying = state.phase === 'dying';
@@ -444,7 +487,8 @@ if (DEBUG) {
     },
     errors,
     bark: () => doBark(),
-    view, cam, world, charlie, saucer, barkSys: bark, river, audio, particles, ui, storage, THREE,
+    awardBalls: (n) => awardBalls(n, state.player.px, state.player.pz, state.player),
+    view, cam, world, charlie, saucer, barkSys: bark, unlocks, river, audio, particles, ui, storage, THREE,
   };
   const hud = document.createElement('div');
   hud.id = 'debug';

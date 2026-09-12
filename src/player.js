@@ -4,7 +4,7 @@
 // that could kill him (collision, water, eagle) reads the rendered position
 // every step. See SPEC.md §5.1–5.4.
 
-import { PLAYER, FIELD, BALL } from './config.js';
+import { PLAYER, FIELD, BALL, ZOOMIES } from './config.js';
 
 const DIRS = {
   up:    { dx: 0,  drow: 1,  angle: 0 },
@@ -32,8 +32,14 @@ export function createPlayer() {
     onPlatform: null,           // set by the river system when riding a log
     moved: false,               // has the player ever moved (starts auto-scroll)
     lastHopAt: -1,
+    hopTimes: [],               // recent hop start times, for the zoomies trigger
+    zoomiesUntil: -1,           // sim time the current zoomies end
+    zoomiesReadyAt: 0,          // sim time zoomies may trigger again
+    spinY: 0,                   // extra spin applied by the abduction
   };
 }
+
+export function zoomiesActive(p, time) { return time < p.zoomiesUntil; }
 
 /** Queue a move if the buffer has room. Returns true if accepted. */
 export function queueMove(p, dir) {
@@ -70,7 +76,8 @@ export function updatePlayer(p, dt, world) {
 
   if (p.hop) {
     const h = p.hop;
-    h.t += dt / PLAYER.HOP_DURATION;
+    const zoom = world.time < p.zoomiesUntil;
+    h.t += dt / (PLAYER.HOP_DURATION * (zoom ? ZOOMIES.HOP_SCALE : 1));
     const t = Math.min(1, h.t);
     // Riding a log: the origin drifts with the platform, so hop relative to it.
     p.px = h.fromX + (h.toX - h.fromX) * t;
@@ -125,6 +132,17 @@ export function updatePlayer(p, dt, world) {
       p.lastHopAt = world.time;
       p.idle = 0;
       p.moved = true;
+      // Zoomies: TRIGGER_HOPS hops inside TRIGGER_WINDOW seconds, off cooldown.
+      p.hopTimes.push(world.time);
+      if (p.hopTimes.length > ZOOMIES.TRIGGER_HOPS) p.hopTimes.shift();
+      if (p.hopTimes.length === ZOOMIES.TRIGGER_HOPS
+          && world.time - p.hopTimes[0] <= ZOOMIES.TRIGGER_WINDOW
+          && world.time >= p.zoomiesReadyAt && world.time >= p.zoomiesUntil) {
+        p.zoomiesUntil = world.time + ZOOMIES.DURATION;
+        p.zoomiesReadyAt = p.zoomiesUntil + ZOOMIES.COOLDOWN;
+        p.hopTimes.length = 0;
+        world.onZoomies && world.onZoomies(p);
+      }
       world.onHop && world.onHop(p, dir);
     } else {
       // Blocked: still face that way and reset idle (a bump counts as intent).

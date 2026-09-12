@@ -72,6 +72,11 @@ const BUILD = {
 
 export function byId(id) { return ACCESSORIES.find(a => a.id === id) || null; }
 
+/** A standalone mesh of an item, for the unlock fly-in and the dress-up drop. */
+export function buildAccessoryMesh(id) {
+  return BUILD[id] ? BUILD[id]() : null;
+}
+
 /** True once the lifetime total reaches the item's threshold. */
 export function isUnlocked(id, ballsTotal) {
   const a = byId(id);
