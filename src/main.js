@@ -109,6 +109,7 @@ function enterTitle() {
   state.phase = 'title';
   state.player.facingAngle = Math.PI;          // face the viewer on the title
   ui.hideGameOver();
+  ui.setHudVisible(false);                     // the title carries its own best/balls
   ui.showTitle({ best: state.best, ballsTotal: state.ballsTotal, equipped: state.equipped });
 }
 
@@ -117,6 +118,7 @@ function startGame() {
   state.phase = 'playing';
   state.player.idle = 0;
   ui.hideTitle();
+  ui.setHudVisible(true);
 }
 
 function togglePause() {

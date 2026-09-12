@@ -2,34 +2,33 @@
 
 A *Crossy Road* replica starring **Charlie**, an American cocker spaniel: a fun-loving dog with attitude who lives for chasing tennis balls — wherever that may take him.
 
-Which, here, is straight across eight lanes of traffic. He hops through endless roads, rivers and railways fetching bouncing tennis balls, and does a spin of delight every time he gets one.
+Which, here, is straight across eight lanes of traffic. He hops through endless roads, rivers and railways fetching bouncing tennis balls, and does a spin of delight every time he gets one. High score and balls fetched are saved in the browser; balls unlock outfits from his real wardrobe.
 
 Static site. No build step. Hosted on GitHub Pages.
 
-> **Status: specified, not yet built.** This repo currently holds the plan, the spec, and the original 30-minute prototype. The full build follows.
-
 ---
 
-## Documents
+## Play
 
-| File | What it is |
-|---|---|
-| **[`SPEC.md`](SPEC.md)** | The authoritative build specification — constants, mechanics, models, acceptance criteria, task list |
-| **[`PLAN.md`](PLAN.md)** | The research and reasoning behind it: what the original game does, what v1 got wrong, why three.js |
-| `index.html` | **v1** — the original 30-minute prototype (canvas 2D). Moves to `v1/` when the rebuild starts |
-| `.kiro/specs/` | The v1 spec (requirements / design / tasks) |
-| `kiro_prompt_log.md` | Prompt-by-prompt log of the v1 session |
+| | Desktop | Mobile |
+|---|---|---|
+| Move | Arrow keys / WASD | Tap = forward, swipe = direction |
+| Start / restart | Space or Enter, or any move | Tap |
+| Pause | P or Esc, or the **II** button | **II** button |
+| Mute | M, or the **♪** button | **♪** button |
 
-## How it's built
-
-- **three.js r186**, vendored into `vendor/` — no CDN, no npm install, no bundler
-- Orthographic camera at **57° pitch / 15° yaw**, derived by measuring lane angles in real gameplay screenshots
-- All voxel models merged per-colour into shared geometries, so a screen full of cars is a handful of draw calls
-- Game *rules* (world generation, difficulty, collision, the eagle) are pure functions in `src/rules/`, unit-tested under plain `node`
+Don't idle — the eagle is watching. Don't fall behind the camera, either.
 
 ## Hosting
 
-Nothing to set up. GitHub Pages serves these files over HTTPS and that is the entire deployment: no build step, no Actions workflow, no server process, no configuration beyond `.nojekyll`. Push to `main` and it is live.
+Nothing to set up. GitHub Pages serves these files over HTTPS and that is the entire deployment: no build step, no Actions workflow, no server process, no configuration beyond `.nojekyll`. Push to the published branch and it is live.
+
+To publish this repo (owner's call — it is private until then):
+
+```bash
+gh repo edit bcollier/charlie-road --visibility public --accept-visibility-change-consequences
+gh api -X POST repos/bcollier/charlie-road/pages -f 'source[branch]=main' -f 'source[path]=/'
+```
 
 ## Running it locally
 
@@ -46,8 +45,8 @@ This is only for previewing before you push. It is **not** a requirement for hos
 
 Useful URL parameters:
 
-- `?debug=1` — fps, draw calls, row types, hitboxes
 - `?seed=123` — reproduce an exact world
+- `?debug=1` — fps, draw calls, row types, and a control surface on `window.__game` (`step`, `steps`, `input`, `reset`, `stats`, `errors`) that drives the simulation independently of `requestAnimationFrame`. That is how the game was verified: a backgrounded tab freezes rAF, so time-dependent behaviour is stepped and asserted on, never trusted from screenshots.
 
 ## Tests
 
@@ -57,20 +56,30 @@ No dependencies, nothing to install:
 node tests/run.js
 ```
 
-These check the fairness invariants — that the generator can never produce an uncrossable road, an unreachable river, or a walled-off row.
+Checks the world generator's fairness invariants over 50 seeds × 2,000 rows — never an uncrossable road, never an unreachable river, never a walled-off row, never overlapping vehicles — plus the difficulty curve, the eagle timer, collision maths and RNG determinism. `package.json` exists only so plain `node` can load ES modules; it declares no dependencies.
 
-## Deploying
+## How it's built
 
-Already configured for GitHub Pages from `main` at the repo root (`.nojekyll` is present, no build step). Pushing to `main` publishes.
+- **three.js r186**, vendored into `vendor/` (module + core, both required by that build) — no CDN, no npm install, no bundler
+- Orthographic camera at **57° pitch / 15° yaw**, derived by measuring lane angles in real gameplay screenshots; verified by projecting a tile and reading back 12.67° / 0.899, exactly as predicted
+- Every voxel model merged per colour into shared geometries; each grass row's slab, trees and rocks are one mesh per colour; particles are one `InstancedMesh`. Typical frame: ~100–150 draw calls
+- Vehicle, log and train positions are pure functions of simulated time — no drift, exact replay from a seed
+- Game *rules* (world generation, difficulty, collision, the eagle) are pure functions in `src/rules/`, unit-tested under plain `node`
+- Charlie is rigged: ears on damped springs that fly on the hop, a tail that never stops, a head-tilt-and-glance when kept waiting. The ball-pickup celebration is a purely visual layer that never blocks input
+- All sound is synthesised in WebAudio; there are no asset files of any kind
 
-## Controls
+## Documents
 
-| | Desktop | Mobile |
-|---|---|---|
-| Move | Arrow keys / WASD | Tap forward, swipe to steer |
-| Start / restart | Space or Enter | Tap |
-| Pause | Esc or P | Pause button |
-| Mute | M | Sound button |
+| File | What it is |
+|---|---|
+| [`SPEC.md`](SPEC.md) | The build specification — constants, mechanics, models, acceptance criteria, task list |
+| [`PLAN.md`](PLAN.md) | The research and reasoning behind it |
+| [`DECISIONS.md`](DECISIONS.md) | Every call made during the build where the spec was silent, ambiguous or wrong, with one line of reasoning each |
+| [`BUILD_LOG.md`](BUILD_LOG.md) | Block-by-block account of the build session, for the dev log |
+| [`screenshots/`](screenshots/) | Milestone screenshots from each block |
+| `v1/` | The original 30-minute prototype (canvas 2D), preserved |
+| `.kiro/specs/`, `kiro_prompt_log.md` | The v1 spec and prompt log |
+| `reference/` | Gameplay screenshots of the original and photos of Charlie, with a README on what each was used for |
 
 ## Credits
 

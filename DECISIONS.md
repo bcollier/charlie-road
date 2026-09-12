@@ -64,3 +64,11 @@ One line of reasoning each. Newest at the bottom.
 39. **Death copy is per type:** OUCH (squashed), SPLASH (drowned), CHOO CHOO (train), BIRD! (eagle).
 40. **Pause freezes the simulation clock entirely** — `step()` returns before advancing time — and resets the frame timer on resume so no catch-up burst follows.
 41. **Fixed: the eagle's grab point.** Direct `die('eagle')` (harness) skipped the warning that captures it; the fallback then read Charlie's position each step while also moving him, and the camera chased him to row 168. The grab point is now captured once on first use.
+
+## Block 7
+
+42. **UI text is sized by container width (`cqi`), not viewport (`vmin`).** Identical on a real device, where the container is the viewport, but it makes the phone layout testable by constraining the UI to a 390×844 box — which was the only way to test it, since the extension's window would not resize. The `@media` chip rule became an `@container` rule for the same reason.
+43. **GPU frame rate is the one thing this session could not measure.** The extension's tab stays backgrounded, rAF never fires, and the compositor discards the frames. CPU cost is 0.31 ms per step+render at 190 draw calls; the scene is ≤205 calls and ~14k triangles with a 2048 shadow map. Reported as such in A21 rather than claimed.
+44. **Tyre smoke was cut** (PLAN §5 "cut first" tier). Sparkles, splash, dust and fur are in; smoke on a near-miss would have been a fifth particle kind for a moment nobody notices.
+45. **The score HUD hides on the title screen**; the title carries its own best and ball count. The right-hand cluster (balls, pause, mute) stays.
+46. **`BUILD_LOG.md` stands in for "prompt log updated".** The v1 log is Kiro's; this session had one prompt — the goal — so the block-by-block account is the useful record, with the goal prompt reproduced at the end.

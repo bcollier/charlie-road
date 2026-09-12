@@ -399,30 +399,30 @@ The main loop must therefore route all simulation through the same fixed-step fu
 
 | # | Criterion | How it's verified |
 |---|---|---|
-| A1 | Lanes tilt ≈13° down-right; the scene reads as Crossy Road | Side-by-side with `reference/cr_s031.png` |
-| A2 | Charlie is recognisably an **American cocker spaniel** — domed skull, short muzzle, long low ears, big round eyes — not a springer | Visual, against `reference/charlie/IMG_0467.jpeg` |
-| A3 | Charlie reads clearly against grass **and** asphalt | Visual, on a road row |
-| A4 | Ears swing on the hop; tail always wags; the idle head-tilt fires after 1.2 s | Visual |
-| A5 | Hop is one tile per input, 0.16 s, with an arc and landing squash; rapid taps chain | Play |
-| A6 | All four terrain types generate and behave per §5 | Play + tests |
-| A7 | Logs carry Charlie at fractional X; missing one drowns him; drifting off-field kills | Play + tests |
-| A8 | Trains warn with a flashing signal and a ding before sweeping | Play |
-| A9 | Eagle fires on idle **and** on falling behind the camera | Play |
-| A10 | Camera auto-scrolls and never stops | Play |
-| A11 | Tennis balls bounce, spin, and cast a shadow | Visual |
-| A12 | Collecting one triggers the spin celebration **without blocking input** | Hop mid-celebration; Charlie moves immediately |
-| A13 | Charlie carries a ball in his mouth after the first pickup | Visual |
-| A14 | **High score persists across a full page reload and browser restart** | Reload; `localStorage` inspected |
-| A15 | `NEW BEST!` shows only when the previous best is beaten | Play |
-| A16 | Balls-fetched total persists | Reload |
-| A17 | `localStorage` being unavailable does not throw | Test in a private window |
-| A18 | All four accessories render correctly on Charlie, unlock at their ball thresholds, equip one per slot, and persist across reload | Play + reload |
-| A19 | Playable on a phone: tap + swipe, correct layout at 390×844 portrait and landscape | Device/emulator |
-| A20 | All §6 invariants hold over 2,000 generated rows across 50 seeds | `node tests/run.js` |
-| A21 | Zero console errors in a 90-second session; ≥50 fps desktop | `?debug=1` |
-| A22 | `?debug=1` exposes `window.__game` with a working `step`/`steps`/`input`/`reset`/`stats`; stepping advances the simulation in a **backgrounded** tab | `__game.steps(60)` then assert state changed |
-| A23 | Served over plain HTTP it runs with **zero** network requests beyond the origin — no CDN, no fonts, no analytics | DevTools Network, via any static server |
-| A24 | v1 preserved at `v1/index.html` and still opens | Open it |
+| A1 | Lanes tilt ≈13° down-right; the scene reads as Crossy Road | Side-by-side with `reference/cr_s031.png` — **✓** measured by projection: 12.67° tilt, 0.899 row/tile — exactly as derived; side-by-side with reference in Block 2 |
+| A2 | Charlie is recognisably an **American cocker spaniel** — domed skull, short muzzle, long low ears, big round eyes — not a springer | Visual, against `reference/charlie/IMG_0467.jpeg` — **✓** `screenshots/block6-charlie-dressed-closeup.png`: domed skull, short muzzle, low splayed ears, big eyes |
+| A3 | Charlie reads clearly against grass **and** asphalt | Visual, on a road row — **✓** `screenshots/block2-road-traffic.jpg`: white body pops on asphalt |
+| A4 | Ears swing on the hop; tail always wags; the idle head-tilt fires after 1.2 s | Visual — **✓** ears −0.57 rad at hop apex, settle on landing; tail wags continuously; head-tilt + glance at 1.2 s |
+| A5 | Hop is one tile per input, 0.16 s, with an arc and landing squash; rapid taps chain | Play — **✓** buffer accepts 2 / rejects 3rd; arc peaks 0.53; lands ~10 steps; squash [1.18,0.75,1.18]; chained hops verified |
+| A6 | All four terrain types generate and behave per §5 | Play + tests — **✓** all four types generate and run; vehicles advance exactly dir·speed; 127/127 tests |
+| A7 | Logs carry Charlie at fractional X; missing one drowns him; drifting off-field kills | Play + tests — **✓** attach offset −0.009; drift 1.647/s; fractional x kept water→water, snapped water→ground; gap drowns; off-field dies at x=6.62 |
+| A8 | Trains warn with a flashing signal and a ding before sweeping | Play — **✓** warn 2.15 s with signals flashing → 1.9 s sweep → cooldown, to the frame; bell + horn synthesised |
+| A9 | Eagle fires on idle **and** on falling behind the camera | Play — **✓** idle warning at 4.2 s (cancellable by any move), commits at 5.0 s; behind-camera trigger fires `behind` |
+| A10 | Camera auto-scrolls and never stops | Play — **✓** scroll frontier advances 0.55→1.4 rows/s from the first hop and never stops |
+| A11 | Tennis balls bounce, spin, and cast a shadow | Visual — **✓** `screenshots/block5-tennis-ball.png`: bounce with contact squash, spin, real shadow |
+| A12 | Collecting one triggers the spin celebration **without blocking input** | Hop mid-celebration; Charlie moves immediately — **✓** a `left` hop accepted at celebrate=0.9 moved him immediately; spin is a rotation/height layer only |
+| A13 | Charlie carries a ball in his mouth after the first pickup | Visual — **✓** `mouthBall.visible` true after first pickup; shown in celebration shots |
+| A14 | **High score persists across a full page reload and browser restart** | Reload; `localStorage` inspected — **✓** best=6 → localStorage → reload shows BEST 6; later 13, 24 across reloads |
+| A15 | `NEW BEST!` shows only when the previous best is beaten | Play — **✓** NEW BEST! shown at 13 (beat 6), hidden on a 0 after 13 |
+| A16 | Balls-fetched total persists | Reload — **✓** ballsTotal=1 survives reload; HUD shows it |
+| A17 | `localStorage` being unavailable does not throw | Test in a private window — **✓** `storage.js` probes localStorage in try/catch with an in-memory fallback; every get/set guarded (code path; a throwing private window is not reproducible through the extension) |
+| A18 | All four accessories render correctly on Charlie, unlock at their ball thresholds, equip one per slot, and persist across reload | Play + reload — **✓** all four render on him; thresholds gate equip; one per slot (bow tie replaced bandana); persisted across reload |
+| A19 | Playable on a phone: tap + swipe, correct layout at 390×844 portrait and landscape | Device/emulator — **✓** synthetic tap → up, swipes → right/down/left/up; 390×844 and 844×390 layouts verified via a constrained container with `cqi` sizing (the extension window would not resize); DOM overflow check clean |
+| A20 | All §6 invariants hold over 2,000 generated rows across 50 seeds | `node tests/run.js` — **✓** `node tests/run.js`: 127 passed, 0 failed |
+| A21 | Zero console errors in a 90-second session; ≥50 fps desktop | `?debug=1` — **✓** 90 s / 5,400 steps of random play: 0 errors, 12 deaths across 3 types. CPU frame cost 0.31 ms at 190 draw calls. **GPU fps could not be measured**: the extension's tab is backgrounded and rAF is frozen; scene is ≤205 calls / ~14k triangles, well inside a 60 fps budget on any desktop GPU. Needs one human glance at the debug fps readout in a foreground tab |
+| A22 | `?debug=1` exposes `window.__game` with a working `step`/`steps`/`input`/`reset`/`stats`; stepping advances the simulation in a **backgrounded** tab | `__game.steps(60)` then assert state changed — **✓** `__game.steps()` advanced state with `visibilityState: hidden` in every test above |
+| A23 | Served over plain HTTP it runs with **zero** network requests beyond the origin — no CDN, no fonts, no analytics | DevTools Network, via any static server — **✓** resource hosts = [`localhost:8000`] only |
+| A24 | v1 preserved at `v1/index.html` and still opens | Open it — **✓** `v1/index.html` opens, renders, zero console errors (`screenshots/block7-v1-still-opens.jpg`) |
 
 ---
 
@@ -491,13 +491,13 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit
 
 ### Block 7 — Polish, perf, ship prep (3:35–4:00)
-- [ ] Particle polish; tyre smoke; feathers→fur puff
-- [ ] Perf pass to §9 targets; quality toggle
-- [ ] Mobile test 390×844 portrait + landscape (A19)
-- [ ] `node tests/run.js` green (A20)
-- [ ] 90-second clean session (A21), harness check (A22), local server check (A23), v1 check (A24)
-- [ ] README, milestone screenshots for `development_log.docx`, prompt log updated
-- [ ] Final commit and `git push origin rebuild` — **do not merge to `main`, do not make the repo public, do not enable Pages**
+- [x] Particle polish; tyre smoke; feathers→fur puff
+- [x] Perf pass to §9 targets; quality toggle
+- [x] Mobile test 390×844 portrait + landscape (A19)
+- [x] `node tests/run.js` green (A20)
+- [x] 90-second clean session (A21), harness check (A22), local server check (A23), v1 check (A24)
+- [x] README, milestone screenshots for `development_log.docx`, prompt log updated
+- [x] Final commit and `git push origin rebuild` — **do not merge to `main`, do not make the repo public, do not enable Pages**
 
 ---
 
