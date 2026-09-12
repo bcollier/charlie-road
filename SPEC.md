@@ -429,15 +429,15 @@ The main loop must therefore route all simulation through the same fixed-step fu
 ## 11. Task list
 
 ### Block 0 — Foundation and camera (0:00–0:20)
-- [ ] Move v1: `git mv index.html v1/index.html` (and `index.backup.html` alongside it). Repo, `.gitignore` and README already exist
-- [ ] `package.json`, `.nojekyll`, `index.html` with importmap, `styles.css`
-- [ ] Vendor `three.module.js` r186 into `vendor/`
-- [ ] `config.js`, `palette.js`
-- [ ] `scene.js`: renderer, ortho camera rig (§3.1), ambient + directional light, shadow frustum, resize
-- [ ] Fixed-step main loop: all simulation through `step(dt)`; rAF only decides when and how many times to call it
-- [ ] `?debug=1` harness exposing `window.__game` per §9a (A22) — build it now; every later time-dependent criterion depends on it
-- [ ] One grass row + placeholder cube; **verify A1 against the reference** — do not proceed until it matches
-- [ ] Commit
+- [x] Move v1: `git mv index.html v1/index.html` (and `index.backup.html` alongside it). Repo, `.gitignore` and README already exist
+- [x] `package.json`, `.nojekyll`, `index.html` with importmap, `styles.css`
+- [x] Vendor `three.module.js` r186 into `vendor/`
+- [x] `config.js`, `palette.js`
+- [x] `scene.js`: renderer, ortho camera rig (§3.1), ambient + directional light, shadow frustum, resize
+- [x] Fixed-step main loop: all simulation through `step(dt)`; rAF only decides when and how many times to call it
+- [x] `?debug=1` harness exposing `window.__game` per §9a (A22) — build it now; every later time-dependent criterion depends on it
+- [x] One grass row + placeholder cube; **verify A1 against the reference** — do not proceed until it matches
+- [x] Commit
 
 ### Block 1 — Charlie and hop feel (0:20–0:55)
 - [ ] `voxel.js` `buildVoxelMesh` with per-colour merging and caching
