@@ -13,7 +13,9 @@
 > 4. A 90-second play session produces zero uncaught exceptions and zero console errors, at ≥50 fps on desktop.
 > 5. The game is deploy-ready for GitHub Pages: `.nojekyll` present, every path relative, no build step, and it runs correctly when served over plain HTTP (verify with any static server, e.g. `python3 -m http.server 8000`).
 
-**Repo:** `bcollier/charlie-road`, already created and **private**, `origin/main` tracking. Commit at the end of every block and push to `origin/main` when the goal is met.
+**Repo:** `bcollier/charlie-road`, already created and **private**.
+
+**Branch: `rebuild`.** All build work happens here. `main` holds the plan and the v1 prototype and must not be touched — merging `rebuild` into `main` is the owner's review step, not part of the goal. Commit at the end of every block and push to `origin/rebuild`.
 
 **Human-gated, explicitly outside the goal:** changing the repo to public and enabling GitHub Pages. That publishes the project to the open internet and is the owner's decision, not the build's. Leave the repo private; the README documents the two commands.
 
@@ -466,7 +468,7 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 - [ ] `node tests/run.js` green (A20)
 - [ ] 90-second clean session (A21), local server check (A22), v1 check (A23)
 - [ ] README, milestone screenshots for `development_log.docx`, prompt log updated
-- [ ] Final commit and `git push origin main` — **do not make the repo public or enable Pages**
+- [ ] Final commit and `git push origin rebuild` — **do not merge to `main`, do not make the repo public, do not enable Pages**
 
 ---
 
