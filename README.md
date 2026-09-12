@@ -6,6 +6,8 @@ Which, here, is straight across eight lanes of traffic. He hops through endless 
 
 Static site. No build step. Hosted on GitHub Pages.
 
+**Play it: [bcollier.github.io/charlie-road](https://bcollier.github.io/charlie-road/)**
+
 ---
 
 ## Play
@@ -21,14 +23,7 @@ Don't idle — the eagle is watching. Don't fall behind the camera, either.
 
 ## Hosting
 
-Nothing to set up. GitHub Pages serves these files over HTTPS and that is the entire deployment: no build step, no Actions workflow, no server process, no configuration beyond `.nojekyll`. Push to the published branch and it is live.
-
-To publish this repo (owner's call — it is private until then):
-
-```bash
-gh repo edit bcollier/charlie-road --visibility public --accept-visibility-change-consequences
-gh api -X POST repos/bcollier/charlie-road/pages -f 'source[branch]=main' -f 'source[path]=/'
-```
+Nothing to set up. GitHub Pages serves these files over HTTPS from `main` and that is the entire deployment: no build step, no Actions workflow, no server process, no configuration beyond `.nojekyll`. Push to `main` and it is live a minute later.
 
 ## Running it locally
 
