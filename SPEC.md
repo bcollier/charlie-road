@@ -11,7 +11,7 @@
 > 2. Every acceptance criterion in §10 is verified (A1–A23).
 > 3. `node tests/run.js` exits 0 with zero failures.
 > 4. A 90-second play session produces zero uncaught exceptions and zero console errors, at ≥50 fps on desktop.
-> 5. The game is deploy-ready: `.nojekyll` present, no absolute paths, README deploy steps written, and it runs correctly from `python3 -m http.server 8000`.
+> 5. The game is deploy-ready for GitHub Pages: `.nojekyll` present, every path relative, no build step, and it runs correctly when served over plain HTTP (verify with any static server, e.g. `python3 -m http.server 8000`).
 
 **Repo:** `bcollier/charlie-road`, already created and **private**, `origin/main` tracking. Commit at the end of every block and push to `origin/main` when the goal is met.
 
@@ -37,7 +37,8 @@ Which, here, is straight across eight lanes of traffic. He hops forward through 
 
 - **three.js r186** (`0.186.0`), `build/three.module.js` committed verbatim to `vendor/`, loaded via `<script type="importmap">`. No CDN, no npm install, no bundler.
 - `package.json` contains exactly `{"type":"module","private":true}` — needed only so plain `node` can run the tests. No dependencies.
-- ES modules require HTTP; `file://` is not supported. Dev: `python3 -m http.server 8000`.
+- **Hosting requires nothing.** GitHub Pages serves static files over HTTPS, which is all this needs: no server process, no build, no Actions workflow, no configuration beyond `.nojekyll`. Push and it is live.
+- The one consequence of using ES modules is **local preview**: browsers block module imports over `file://`, so double-clicking `index.html` shows a blank page. Any static server fixes it — `python3 -m http.server 8000` (Python ships with macOS), `npx serve`, or a VS Code Live Server. **This is a dev-preview convenience, not a runtime dependency**, and it has no bearing on Pages.
 
 ```
 index.html            importmap, canvas, HUD/overlay DOM
@@ -391,7 +392,7 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 | A19 | Playable on a phone: tap + swipe, correct layout at 390×844 portrait and landscape | Device/emulator |
 | A20 | All §6 invariants hold over 2,000 generated rows across 50 seeds | `node tests/run.js` |
 | A21 | Zero console errors in a 90-second session; ≥50 fps desktop | `?debug=1` |
-| A22 | Runs from `python3 -m http.server 8000` with no network requests beyond the origin | DevTools Network |
+| A22 | Served over plain HTTP it runs with **zero** network requests beyond the origin — no CDN, no fonts, no analytics | DevTools Network, via any static server |
 | A23 | v1 preserved at `v1/index.html` and still opens | Open it |
 
 ---

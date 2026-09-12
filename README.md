@@ -27,14 +27,22 @@ Static site. No build step. Hosted on GitHub Pages.
 - All voxel models merged per-colour into shared geometries, so a screen full of cars is a handful of draw calls
 - Game *rules* (world generation, difficulty, collision, the eagle) are pure functions in `src/rules/`, unit-tested under plain `node`
 
+## Hosting
+
+Nothing to set up. GitHub Pages serves these files over HTTPS and that is the entire deployment: no build step, no Actions workflow, no server process, no configuration beyond `.nojekyll`. Push to `main` and it is live.
+
 ## Running it locally
 
-ES modules need HTTP — opening the file directly with `file://` will not work.
+Because the game uses ES modules, browsers block it over `file://` — double-clicking `index.html` gives a blank page. Serve it over HTTP instead, with whatever you have:
 
 ```bash
-python3 -m http.server 8000
+python3 -m http.server 8000     # Python ships with macOS
+# or: npx serve
+# or: VS Code "Live Server"
 # then open http://localhost:8000
 ```
+
+This is only for previewing before you push. It is **not** a requirement for hosting.
 
 Useful URL parameters:
 

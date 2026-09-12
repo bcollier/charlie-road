@@ -145,7 +145,7 @@ Why vendoring over a CDN: 384 KB minified (~95 KB gzipped), no runtime network d
 
 **Two tradeoffs to be explicit about:**
 
-- ES modules are CORS-blocked over `file://`, so double-clicking the HTML stops working. Local dev becomes `python3 -m http.server 8000`. GitHub Pages is unaffected.
+- ES modules are CORS-blocked over `file://`, so double-clicking the HTML stops working and local preview needs any static server (`python3 -m http.server 8000`). **GitHub Pages is entirely unaffected** — it serves over HTTPS, which is all modules require, so hosting still needs no server process, no build and no config beyond `.nojekyll`. The cost is one command during development, nothing in production.
 - A `package.json` containing only `{"type":"module"}` is needed so plain `node` can run the unit tests. **No dependencies, nothing to install** — it does not make this an npm project and does not affect Pages.
 
 ### One architectural idea worth calling out
@@ -198,7 +198,7 @@ Ordered riskiest-first. **Block 2 is the safety checkpoint**: if everything afte
 | **Log riding eats the schedule** — fractional coordinates interacting with hop, collision and bounds | Gets its own 30-minute block. If it overruns, ship grid-snapped logs (easier, slightly less faithful) and revisit in Block 7 |
 | **Celebration animation gets the player killed** | Spec'd as *cosmetic only* — it never blocks input or moves the logical position (SPEC §5.4). A blocking animation on a road would be genuinely unfair |
 | **Autonomous run drifts from spec** | `SPEC.md` is authoritative with machine-checkable acceptance criteria; `node tests/run.js` gates the fairness rules; a git commit at each block milestone gives rollback points |
-| **`file://` stops working** | Documented in the README; `python3 -m http.server 8000` for dev |
+| **`file://` stops working**, so a grader who double-clicks the file sees a blank page | The deliverable is a Pages URL, linked at the top of the README. Local preview documented with three one-line options. If opening the raw file ever becomes a hard requirement, the fallback is three.js r147 (the last UMD build) loaded as a classic script — it costs the module structure and the node-testable `src/rules/` split, which is why it is not the default |
 | **Mobile perf with shadows** | Merged geometries, shared materials, row recycling. Quality toggle drops the shadow map to 1024 and clamps DPR to 2. Measured in Block 7, not assumed |
 | **Losing the homework paper trail** | v1 preserved at `v1/index.html`; screenshot at each block milestone for `development_log.docx`; prompt log updated as we go |
 
