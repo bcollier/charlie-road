@@ -460,11 +460,11 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit — **the game must be playable end to end here**
 
 ### Block 3 — River (1:35–2:05)
-- [ ] `rows/river.js`; `models/{log,lilypad}.js`
-- [ ] Log drift, attachment, fractional X, off-field death
-- [ ] Drown death + splash particles
-- [ ] Tests: invariant 4, attachment maths; A7
-- [ ] Commit
+- [x] `rows/river.js`; `models/{log,lilypad}.js`
+- [x] Log drift, attachment, fractional X, off-field death
+- [x] Drown death + splash particles
+- [x] Tests: invariant 4, attachment maths; A7
+- [x] Commit
 
 ### Block 4 — Rail and eagle (2:05–2:30)
 - [ ] `rows/rail.js`; `models/{train,signal}.js`; warning cycle

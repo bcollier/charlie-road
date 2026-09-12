@@ -6,12 +6,13 @@ import { FIELD } from './config.js';
 import { createGenerator } from './rules/worldgen.js';
 import { createGrassRow } from './rows/grass.js';
 import { createRoadRow } from './rows/road.js';
+import { createRiverRow } from './rows/river.js';
 import { createPlaceholderRow } from './rows/placeholder.js';
 
 const BUILDERS = {
   grass: createGrassRow,
   road: createRoadRow,
-  river: createPlaceholderRow,   // real builder lands in Block 3
+  river: createRiverRow,
   rail: createPlaceholderRow,    // real builder lands in Block 4
 };
 
@@ -55,6 +56,11 @@ export function createWorld(scene, seed, extraBuilders = {}) {
       const r = rows.get(i);
       if (!r || r.desc.type !== 'grass') return false;
       return r.desc.obstacles.some(o => o.x === x);
+    },
+
+    isWater(i) {
+      const r = rows.get(i);
+      return !!r && r.desc.type === 'river';
     },
 
     canMoveTo(x, i) {

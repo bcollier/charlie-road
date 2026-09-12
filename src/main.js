@@ -12,6 +12,7 @@ import { createScene } from './scene.js';
 import { createCamera } from './camera.js';
 import { createInput } from './input.js';
 import { createWorld } from './world.js';
+import { createRiverSystem } from './river.js';
 import { createUI } from './ui.js';
 import { storage } from './storage.js';
 import { createCharlie } from './models/charlie.js';
@@ -57,10 +58,13 @@ const charlie = createCharlie();
 scene.add(charlie.root);
 
 // ---- Hooks the player state machine needs ---------------------------------
+const river = createRiverSystem(world, (type) => die(type));
 const hooks = {
   time: 0,
   minRow: 0,
   canMoveTo: (x, row) => world.canMoveTo(x, row),
+  isWater: (row) => world.isWater(row),
+  onLanded: (p) => river.onLanded(p),
   onHop: null,
   onBlocked: null,
 };
@@ -86,6 +90,7 @@ function die(type) {
   p.alive = false;
   clearQueue(p);
   p.hop = null;
+  p.onPlatform = null;
   p.celebrate = -1;
 }
 
@@ -156,6 +161,7 @@ function step(dt) {
 
   if (state.phase === 'playing') {
     hooks.minRow = Math.max(0, Math.ceil(cam.trailingRow()));
+    river.update(p);            // carry him on a log before the hop machine reads p.x
     updatePlayer(p, dt, hooks);
     if (p.row > state.score) { state.score = p.row; ui.setScore(state.score); }
     checkCollisions(p);
@@ -163,10 +169,18 @@ function step(dt) {
     ensureWorld(p);
   } else if (state.phase === 'dying') {
     state.death.t += dt;
-    // Squash: flatten fast, spread a little.
-    const k = Math.min(1, state.death.t / 0.12);
-    p.scale = [1 + 0.45 * k, 1 - 0.85 * k, 1 + 0.45 * k];
-    p.py = 0;
+    const t = state.death.t;
+    if (state.death.type === 'drowned') {
+      // Sink below the surface, with a wobble as he goes.
+      p.py = -Math.min(0.8, t * 1.6);
+      p.px = p.x + 0.04 * Math.sin(t * 22);
+      p.scale = [1, 1, 1];
+    } else {
+      // Squash: flatten fast, spread a little.
+      const k = Math.min(1, t / 0.12);
+      p.scale = [1 + 0.45 * k, 1 - 0.85 * k, 1 + 0.45 * k];
+      p.py = 0;
+    }
     p.vx = 0; p.vy = 0;
     cam.update(dt, p, 0);
     if (state.death.t >= DEATH_HOLD) finishDeath();
@@ -240,8 +254,9 @@ if (DEBUG) {
       };
     },
     rowTypes(from, to) {
+      const L = { grass: 'g', road: 'r', river: 'w', rail: 't' };
       const out = [];
-      for (let i = from; i <= to; i++) { const r = world.row(i); out.push(r ? r.desc.type[0] : '.'); }
+      for (let i = from; i <= to; i++) { const r = world.row(i); out.push(r ? L[r.desc.type] : '.'); }
       return out.join('');
     },
     errors,

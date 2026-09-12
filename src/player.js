@@ -84,6 +84,7 @@ export function updatePlayer(p, dt, world) {
       p.hop = null;
       p.squash = PLAYER.SQUASH_TIME;
       p.py = 0;
+      world.onLanded && world.onLanded(p);
     }
   } else {
     // Standing (possibly drifting on a platform, which updates p.x directly).
@@ -110,11 +111,14 @@ export function updatePlayer(p, dt, world) {
     const d = DIRS[dir];
     p.facing = dir;
     p.facingAngle = d.angle;
-    // Hop from the fractional position (on a log) to the nearest tile in that direction.
-    const toX = d.dx !== 0 ? Math.round(p.x) + d.dx : Math.round(p.x);
+    // Hops move ±1 tile from wherever he is. Landing on water keeps the
+    // fractional offset a log gave him (that's what makes rivers hard);
+    // landing on ground snaps back to the grid.
+    const rawX = p.x + d.dx;
     const toRow = p.row + d.drow;
-    const inField = toX >= FIELD.MIN_X && toX <= FIELD.MAX_X && toRow >= (world.minRow ?? 0);
-    if (inField && world.canMoveTo(toX, toRow)) {
+    const toX = (world.isWater && world.isWater(toRow)) ? rawX : Math.round(rawX);
+    const inField = toX >= FIELD.MIN_X - 1e-6 && toX <= FIELD.MAX_X + 1e-6 && toRow >= (world.minRow ?? 0);
+    if (inField && world.canMoveTo(Math.round(toX), toRow)) {
       p.hop = { fromX: p.x, fromRow: p.row, toX, toRow, t: 0 };
       p.onPlatform = null;
       p.hopsChained = (world.time - p.lastHopAt) < 0.5 ? p.hopsChained + 1 : 0;

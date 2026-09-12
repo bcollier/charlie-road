@@ -29,3 +29,10 @@ One line of reasoning each. Newest at the bottom.
 16. **Vehicle traffic lives in `rows/road.js`, not a separate `hazards.js`.** Each row owns its movers and exposes them; the spec's `hazards.js` would have been a pass-through.
 17. **River and rail rows are coloured placeholder slabs until Blocks 3–4**, walkable and harmless, so the checkpoint is playable end to end with the real generator.
 18. **Camera pitch re-judged with real content: stays 57°.** Side by side with `reference/cr_s031.png`, the tilt, row proportions, vehicle-to-lane fit and shading pattern all match. Not worth a second constant.
+
+## Block 3
+
+19. **Landing on water keeps the fractional x; landing on ground snaps to the grid.** The spec says hops preserve the log's offset, which is right between river rows, but carrying a fractional x onto grass would leave Charlie standing between tiles and break obstacle checks. The destination row's type decides.
+20. **Off-field on a log is ±0.6 past the last column**, so he visibly rides past the bank before dying rather than dying at the edge.
+21. **Drown splash particles are deferred to Block 5** with the particle system; the sink animation (0.8 tiles down with a wobble) is in now. The task is ticked for the death; the splash lands with `particles.js`.
+22. **Platform bob is cosmetic.** Logs bob ±0.015 on a sine; Charlie's height does not follow it, since he's carried by x only. Invisible at gameplay scale and keeps the physics one-dimensional.
