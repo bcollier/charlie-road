@@ -1,0 +1,2 @@
+help me write a spec for a game I want to build. I want to build a version of crossy road the game that plays in a web browser and can be hosted on github pages so no building npm just plain web pages. for this first version I want to see how far I can get in 30 minutes as a hard time constraint, so build a spec you think we can do in 30 minutes
+

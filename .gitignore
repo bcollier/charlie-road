@@ -1,0 +1,14 @@
+# Local reference material — dog photos and App Store screenshots.
+# Used during development, deliberately NOT published.
+reference/
+
+# OS / editor cruft
+.DS_Store
+._*
+Thumbs.db
+
+# Office lock files
+~$*
+
+# Node (only package.json is tracked; there are no dependencies)
+node_modules/

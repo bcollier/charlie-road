@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crossy Road</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 2px solid #444;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  
+  <script>
+    // ========== Constants ==========
+    const COLS = 11;
+    const TILE = 54;
+    const CANVAS_W = COLS * TILE;  // 594
+    const CANVAS_H = 600;
+    const PLAYER_START_COL = Math.floor(COLS / 2);  // 5
+    const VEHICLE_W = TILE * 1.6;
+    const VEHICLE_H = TILE * 0.7;
+    const LOOKAHEAD = 10;
+    const GENERATE_TRIGGER = 5;
+
+    // Colors
+    const COLOR_SAFE = '#3a7d44';
+    const COLOR_TRAFFIC = '#666666';
+    const COLOR_PLAYER = '#f5c518';
+    const COLOR_VEHICLE = '#e84545';
+
+    // ========== State ==========
+    const state = {
+      playerCol: PLAYER_START_COL,
+      playerRow: 0,
+      maxRow: 0,
+      score: 0,
+      rows: [],
+      lastTime: 0,
+      gameOver: false,
+      pendingMove: null
+    };
+
+    // ========== Canvas Setup ==========
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    canvas.width = CANVAS_W;
+    canvas.height = CANVAS_H;
+
+    // ========== World Generation ==========
+    function generateRow(rowIndex) {
+      // Row 0 is always safe
+      if (rowIndex === 0) {
+        state.rows.push({
+          type: 'safe',
+          color: COLOR_SAFE
+        });
+        return;
+      }
+
+      // Count consecutive traffic rows at the end
+      let trafficCount = 0;
+      for (let i = state.rows.length - 1; i >= 0; i--) {
+        if (state.rows[i].type === 'traffic') {
+          trafficCount++;
+        } else {
+          break;
+        }
+      }
+
+      // Force safe if we already have 3 consecutive traffic rows
+      const forceSafe = trafficCount >= 3;
+      const isTraffic = forceSafe ? false : Math.random() < 0.7;
+
+      if (isTraffic) {
+        // Generate traffic row
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        const speed = 2 + Math.random() * 6;  // [2, 8]
+        const vehicles = [];
+
+        const minGap = VEHICLE_W + 2 * TILE;
+        let x = Math.random() * minGap;
+        while (x < CANVAS_W + VEHICLE_W * 2) {
+          vehicles.push({ x });
+          x += minGap + Math.random() * TILE * 2;
+        }
+
+        state.rows.push({
+          type: 'traffic',
+          color: COLOR_TRAFFIC,
+          direction,
+          speed,
+          vehicles
+        });
+      } else {
+        // Generate safe row
+        state.rows.push({
+          type: 'safe',
+          color: COLOR_SAFE
+        });
+      }
+    }
+
+    function ensureRowsAhead() {
+      const target = state.playerRow + LOOKAHEAD;
+      while (state.rows.length <= target) {
+        generateRow(state.rows.length);
+      }
+    }
+
+    // ========== Input Handling ==========
+    const KEYS = {
+      ArrowUp: { dr: 1, dc: 0 },
+      w: { dr: 1, dc: 0 },
+      W: { dr: 1, dc: 0 },
+      ArrowDown: { dr: -1, dc: 0 },
+      s: { dr: -1, dc: 0 },
+      S: { dr: -1, dc: 0 },
+      ArrowLeft: { dr: 0, dc: -1 },
+      a: { dr: 0, dc: -1 },
+      A: { dr: 0, dc: -1 },
+      ArrowRight: { dr: 0, dc: 1 },
+      d: { dr: 0, dc: 1 },
+      D: { dr: 0, dc: 1 }
+    };
+
+    document.addEventListener('keydown', e => {
+      if (state.gameOver && (e.key === 'r' || e.key === 'R' || e.key === 'Enter')) {
+        resetGame();
+        return;
+      }
+      
+      if (KEYS[e.key]) {
+        e.preventDefault();
+        if (!state.gameOver) {
+          state.pendingMove = KEYS[e.key];
+        }
+      }
+    });
+
+    canvas.addEventListener('click', () => {
+      if (state.gameOver) {
+        resetGame();
+      }
+    });
+
+    // ========== Player Movement ==========
+    function handleInput() {
+      if (state.gameOver || !state.pendingMove) return;
+      
+      const { dr, dc } = state.pendingMove;
+      state.pendingMove = null;
+
+      const newRow = state.playerRow + dr;
+      const newCol = state.playerCol + dc;
+
+      // Clamp column
+      if (newCol < 0 || newCol >= COLS) return;
+
+      // Prevent moving behind camera bottom
+      const cameraBottomRow = state.playerRow - Math.floor(CANVAS_H / TILE / 2);
+      if (newRow < Math.max(0, cameraBottomRow)) return;
+
+      state.playerRow = newRow;
+      state.playerCol = newCol;
+      updateScore();
+    }
+
+    function updateScore() {
+      if (state.playerRow > state.maxRow) {
+        state.maxRow = state.playerRow;
+        state.score = state.maxRow;
+      }
+    }
+
+    // ========== Camera ==========
+    function cameraOffsetY() {
+      const playerPixelY = (CANVAS_H / 2) - (TILE / 2);
+      return playerPixelY + state.playerRow * TILE;
+    }
+
+    // ========== Vehicle Movement ==========
+    function moveVehicles(dt) {
+      const dtSec = dt / 1000;
+      for (const row of state.rows) {
+        if (row.type !== 'traffic') continue;
+        const dx = row.direction * row.speed * TILE * dtSec;
+        for (const v of row.vehicles) {
+          v.x += dx;
+          const wrapWidth = CANVAS_W + VEHICLE_W * 2;
+          if (v.x > CANVAS_W + VEHICLE_W) v.x -= wrapWidth;
+          if (v.x < -VEHICLE_W) v.x += wrapWidth;
+        }
+      }
+    }
+
+    // ========== Collision Detection ==========
+    function checkCollision() {
+      const row = state.rows[state.playerRow];
+      if (!row || row.type === 'safe') return;
+
+      const px = state.playerCol * TILE;
+      for (const v of row.vehicles) {
+        const overlapX = Math.max(0, Math.min(px + TILE, v.x + VEHICLE_W) - Math.max(px, v.x));
+        const overlapY = Math.min(TILE, VEHICLE_H);
+        const overlapArea = overlapX * overlapY;
+        if (overlapArea > 0.5 * TILE * TILE) {
+          state.gameOver = true;
+          return;
+        }
+      }
+    }
+
+    // ========== Rendering ==========
+    function draw() {
+      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      const camY = cameraOffsetY();
+
+      // Draw rows and vehicles
+      for (let r = 0; r < state.rows.length; r++) {
+        const row = state.rows[r];
+        const rowY = camY - r * TILE;
+
+        // Skip rows outside visible area
+        if (rowY < -TILE || rowY > CANVAS_H) continue;
+
+        // Draw row background
+        ctx.fillStyle = row.color;
+        ctx.fillRect(0, rowY, CANVAS_W, TILE);
+
+        // Draw vehicles
+        if (row.type === 'traffic') {
+          ctx.fillStyle = COLOR_VEHICLE;
+          for (const v of row.vehicles) {
+            const vehicleY = rowY + (TILE - VEHICLE_H) / 2;
+            ctx.fillRect(v.x, vehicleY, VEHICLE_W, VEHICLE_H);
+          }
+        }
+      }
+
+      // Draw player
+      const playerY = camY - state.playerRow * TILE;
+      ctx.fillStyle = COLOR_PLAYER;
+      ctx.fillRect(state.playerCol * TILE, playerY, TILE, TILE);
+
+      // Draw score HUD
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText(`Score: ${state.score}`, 10, 25);
+
+      // Draw game over overlay
+      if (state.gameOver) {
+        drawGameOverOverlay();
+      }
+    }
+
+    function drawGameOverOverlay() {
+      // Semi-transparent background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      // Game Over text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 48px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('GAME OVER', CANVAS_W / 2, CANVAS_H / 2 - 40);
+
+      // Score text
+      ctx.font = 'bold 32px Arial';
+      ctx.fillText(`Score: ${state.score}`, CANVAS_W / 2, CANVAS_H / 2 + 20);
+
+      // Restart text
+      ctx.font = '20px Arial';
+      ctx.fillText('[ R ] Restart', CANVAS_W / 2, CANVAS_H / 2 + 70);
+
+      // Reset text align
+      ctx.textAlign = 'left';
+    }
+
+    // ========== Reset ==========
+    function resetGame() {
+      state.playerCol = PLAYER_START_COL;
+      state.playerRow = 0;
+      state.maxRow = 0;
+      state.score = 0;
+      state.rows = [];
+      state.lastTime = 0;
+      state.gameOver = false;
+      state.pendingMove = null;
+      ensureRowsAhead();
+    }
+
+    // ========== Game Loop ==========
+    function tick(timestamp) {
+      let dt = timestamp - state.lastTime;
+      if (dt > 100) dt = 100;
+      state.lastTime = timestamp;
+
+      ensureRowsAhead();
+      handleInput();
+      
+      if (!state.gameOver) {
+        moveVehicles(dt);
+        checkCollision();
+      }
+      
+      draw();
+      requestAnimationFrame(tick);
+    }
+
+    // ========== Initialization ==========
+    ensureRowsAhead();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
