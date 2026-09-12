@@ -467,10 +467,10 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit
 
 ### Block 4 — Rail and eagle (2:05–2:30)
-- [ ] `rows/rail.js`; `models/{train,signal}.js`; warning cycle
-- [ ] `eagle.js`: both triggers, warning shadow, swoop, grab
-- [ ] `rules/eagle.js` + tests; A8, A9, A10
-- [ ] Commit
+- [x] `rows/rail.js`; `models/{train,signal}.js`; warning cycle
+- [x] `eagle.js`: both triggers, warning shadow, swoop, grab
+- [x] `rules/eagle.js` + tests; A8, A9, A10
+- [x] Commit
 
 ### Block 5 — Tennis balls, audio, persistence (2:30–3:00)
 - [ ] `models/ball.js` shared geometry (§4.3)

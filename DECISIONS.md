@@ -36,3 +36,12 @@ One line of reasoning each. Newest at the bottom.
 20. **Off-field on a log is ±0.6 past the last column**, so he visibly rides past the bank before dying rather than dying at the edge.
 21. **Drown splash particles are deferred to Block 5** with the particle system; the sink animation (0.8 tiles down with a wobble) is in now. The task is ticked for the death; the splash lands with `particles.js`.
 22. **Platform bob is cosmetic.** Logs bob ±0.015 on a sine; Charlie's height does not follow it, since he's carried by x only. Invisible at gameplay scale and keeps the physics one-dimensional.
+
+## Block 4
+
+23. **Crossing signals sit at x=±3.5 on the row seam, not at the field edge.** At x=6.5 the signal was outside the field and, in portrait — where the camera clamps to ±2.75 and shows ±3.25 tiles — never in frame at all. The warning is the whole point of the signal. Flanking the middle lanes keeps one in view from any x; they sit between tiles so nothing walks through them.
+24. **The eagle warning is cancellable.** The shadow appears for the last 0.8 s of the idle window (at idleLimit − 0.8) and any move clears it; the eagle commits only at idleLimit. Spec §3.6 reads as warning-then-commit with no escape, but an uncancellable 0.8 s after the limit is 0.8 s of "already dead". The behind-camera trigger uses the same window and cancels if he catches up.
+25. **Bumping into an obstacle resets the idle timer.** The wiki says sidestepping on the spot keeps the eagle away; a blocked hop is the same intent. Lenient rather than punishing.
+26. **`rules/eagle.js` is folded into `rules/difficulty.js` as `idleLimit()`.** It is one piecewise-linear function of score; a separate module was a file for a function. Tested there.
+27. **Train cycle is deterministic in t** — warn → sweep → cooldown from the row's phase, like vehicles. The sweep covers the lane width plus the train length at 20 tiles/s (1.9 s). A train is visible ~0.8 s after the warning ends, so the tell-to-danger window is ~2.5–3 s.
+28. **Death holds differ by type:** squashed 0.9, drowned 0.9, train 1.0, eagle 1.7 — the eagle needs the swoop and lift to read.

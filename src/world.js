@@ -7,13 +7,13 @@ import { createGenerator } from './rules/worldgen.js';
 import { createGrassRow } from './rows/grass.js';
 import { createRoadRow } from './rows/road.js';
 import { createRiverRow } from './rows/river.js';
-import { createPlaceholderRow } from './rows/placeholder.js';
+import { createRailRow } from './rows/rail.js';
 
 const BUILDERS = {
   grass: createGrassRow,
   road: createRoadRow,
   river: createRiverRow,
-  rail: createPlaceholderRow,    // real builder lands in Block 4
+  rail: createRailRow,
 };
 
 export function createWorld(scene, seed, extraBuilders = {}) {
@@ -73,6 +73,29 @@ export function createWorld(scene, seed, extraBuilders = {}) {
     /** Advance every dynamic row to simulated time t. */
     update(t) {
       for (const r of rows.values()) r.update(t);
+      // A rail group shares one signal, on its first track: it flashes if
+      // any track in the group is in its warning window.
+      for (const r of rows.values()) {
+        if (r.desc.type !== 'rail' || !r.signal) continue;
+        let warn = false;
+        for (let k = 0; k < r.desc.laneCount; k++) {
+          const q = rows.get(r.desc.index + k);
+          if (q && q.state === 'warn') { warn = true; break; }
+        }
+        r.setSignal(warn, t);
+      }
+    },
+
+    /** True if a train is in its warning window on any track of the group containing row i. */
+    trainWarning(i) {
+      const r = rows.get(i);
+      if (!r || r.desc.type !== 'rail') return false;
+      const first = i - r.desc.laneIndex;
+      for (let k = 0; k < r.desc.laneCount; k++) {
+        const q = rows.get(first + k);
+        if (q && q.state === 'warn') return true;
+      }
+      return false;
     },
 
     reset(newSeed) {

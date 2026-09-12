@@ -82,7 +82,7 @@ export const RAIL = {
   TRAIN_SPEED: 20,
   TRAIN_LENGTH: 14,
   COOLDOWN: [2.5, 5.0],
-  SIGNAL_X: FIELD.MAX_X + 0.5,
+  SIGNAL_XS: [-3.5, 3.5],   // on the row seam, flanking the middle lanes: always one in a portrait view
 };
 
 // ---- Eagle (§3.6) -----------------------------------------------------------

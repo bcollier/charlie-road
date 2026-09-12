@@ -13,11 +13,12 @@ import { createCamera } from './camera.js';
 import { createInput } from './input.js';
 import { createWorld } from './world.js';
 import { createRiverSystem } from './river.js';
+import { createEagleSystem } from './eagle.js';
 import { createUI } from './ui.js';
 import { storage } from './storage.js';
 import { createCharlie } from './models/charlie.js';
 import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate } from './player.js';
-import { difficulty } from './rules/difficulty.js';
+import { difficulty, idleLimit } from './rules/difficulty.js';
 import { aabb, playerBox, vehicleBox } from './rules/collide.js';
 import { stats as voxelStats } from './voxel.js';
 
@@ -25,7 +26,8 @@ const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
 const FIXED_SEED = params.has('seed') ? Number(params.get('seed')) : null;
 
-const DEATH_HOLD = 0.9;
+// Seconds each death plays out before the game-over card.
+const DEATH_HOLD = { squashed: 0.9, drowned: 0.9, trainHit: 1.0, eagle: 1.7 };
 
 // ---- State ------------------------------------------------------------------
 export const state = {
@@ -59,6 +61,7 @@ scene.add(charlie.root);
 
 // ---- Hooks the player state machine needs ---------------------------------
 const river = createRiverSystem(world, (type) => die(type));
+const eagle = createEagleSystem(scene, (type) => die(type));
 const hooks = {
   time: 0,
   minRow: 0,
@@ -85,8 +88,9 @@ createInput({
 function die(type) {
   if (state.phase !== 'playing') return;
   state.phase = 'dying';
-  state.death = { type, t: 0 };
   const p = state.player;
+  const rowHere = world.row(Math.round(-p.pz));
+  state.death = { type, t: 0, dir: rowHere && rowHere.desc.dir ? rowHere.desc.dir : 1 };
   p.alive = false;
   clearQueue(p);
   p.hop = null;
@@ -122,6 +126,8 @@ function reset(seed) {
   ui.setScore(0);
   world.reset(seed);
   cam.reset();
+  eagle.reset();
+  charlie.root.rotation.set(0, 0, 0);
   ensureWorld(state.player);
   world.update(0);
 }
@@ -143,9 +149,13 @@ function checkCollisions(p) {
   const lo = Math.floor(-p.pz - 0.5), hi = Math.ceil(-p.pz + 0.5);
   for (let i = lo; i <= hi; i++) {
     const r = world.row(i);
-    if (!r || r.desc.type !== 'road') continue;
-    for (const v of r.vehicles) {
-      if (aabb(pb, vehicleBox(v.x, -i, v.kind))) return die('squashed');
+    if (!r) continue;
+    if (r.desc.type === 'road') {
+      for (const v of r.vehicles) {
+        if (aabb(pb, vehicleBox(v.x, -i, v.kind))) return die('squashed');
+      }
+    } else if (r.desc.type === 'rail' && r.trainX !== null) {
+      if (aabb(pb, r.trainBox)) return die('trainHit');
     }
   }
 }
@@ -165,25 +175,39 @@ function step(dt) {
     updatePlayer(p, dt, hooks);
     if (p.row > state.score) { state.score = p.row; ui.setScore(state.score); }
     checkCollisions(p);
+    if (state.phase === 'playing') eagle.update(dt, p, idleLimit(state.score), cam.trailingRow());
     cam.update(dt, p, difficulty(state.score).autoScroll);
     ensureWorld(p);
   } else if (state.phase === 'dying') {
     state.death.t += dt;
     const t = state.death.t;
-    if (state.death.type === 'drowned') {
-      // Sink below the surface, with a wobble as he goes.
-      p.py = -Math.min(0.8, t * 1.6);
-      p.px = p.x + 0.04 * Math.sin(t * 22);
-      p.scale = [1, 1, 1];
-    } else {
-      // Squash: flatten fast, spread a little.
-      const k = Math.min(1, t / 0.12);
-      p.scale = [1 + 0.45 * k, 1 - 0.85 * k, 1 + 0.45 * k];
-      p.py = 0;
+    switch (state.death.type) {
+      case 'drowned':
+        // Sink below the surface, with a wobble as he goes.
+        p.py = -Math.min(0.8, t * 1.6);
+        p.px = p.x + 0.04 * Math.sin(t * 22);
+        p.scale = [1, 1, 1];
+        break;
+      case 'trainHit':
+        // Launched along the train's direction, up and over.
+        p.py = Math.max(0, 5.5 * t * (1.1 - t));
+        p.px = p.x + state.death.dir * 3.2 * t;
+        p.scale = [1, 1, 1];
+        break;
+      case 'eagle':
+        p.scale = [1, 1, 1];
+        eagle.updateDying(p, t, state.time);
+        break;
+      default: {
+        // Squash: flatten fast, spread a little.
+        const k = Math.min(1, t / 0.12);
+        p.scale = [1 + 0.45 * k, 1 - 0.85 * k, 1 + 0.45 * k];
+        p.py = 0;
+      }
     }
     p.vx = 0; p.vy = 0;
     cam.update(dt, p, 0);
-    if (state.death.t >= DEATH_HOLD) finishDeath();
+    if (t >= (DEATH_HOLD[state.death.type] ?? 0.9)) finishDeath();
   }
 
   // Sync the rig.
@@ -198,6 +222,8 @@ function step(dt) {
     carrying: p.carrying,
     facingAngle: p.facingAngle,
   });
+  // Train hit: tumble end over end while airborne.
+  charlie.root.rotation.z = (state.phase === 'dying' && state.death.type === 'trainHit') ? state.death.t * 16 : 0;
 }
 
 function render() {
@@ -260,7 +286,7 @@ if (DEBUG) {
       return out.join('');
     },
     errors,
-    view, cam, world, charlie, ui, storage, THREE,
+    view, cam, world, charlie, eagle, river, ui, storage, THREE,
   };
   const hud = document.createElement('div');
   hud.id = 'debug';
