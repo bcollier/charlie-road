@@ -54,6 +54,7 @@ export function createScene(canvas) {
   const sunOffset = new THREE.Vector3(-5, 10, -4).normalize().multiplyScalar(30);
 
   const target = new THREE.Vector3(0, 0, 0);
+  const frustum = { halfW: 1, halfH: 1, aspect: 1, w: 1, h: 1 };
 
   function setTarget(x, y, z) {
     target.set(x, y, z);
@@ -86,11 +87,12 @@ export function createScene(canvas) {
     camera.top = halfH;
     camera.bottom = -halfH;
     camera.updateProjectionMatrix();
-    return { w, h, aspect, halfW, halfH };
+    Object.assign(frustum, { w, h, aspect, halfW, halfH });
+    return frustum;
   }
 
   setTarget(0, 0, 0);
   resize();
 
-  return { renderer, scene, camera, sun, ambient, target, setTarget, resize, camDir };
+  return { renderer, scene, camera, sun, ambient, target, frustum, setTarget, resize, camDir };
 }

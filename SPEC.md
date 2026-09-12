@@ -440,14 +440,14 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit
 
 ### Block 1 — Charlie and hop feel (0:20–0:55)
-- [ ] `voxel.js` `buildVoxelMesh` with per-colour merging and caching
-- [ ] `models/charlie.js` per §4.1
-- [ ] `player.js` hop state machine, arc, squash, facing, input buffer
-- [ ] Ear spring + tail wag (§5.2)
-- [ ] `input.js` keyboard + touch
-- [ ] `camera.js` follow damping + auto-scroll
-- [ ] Field bounds; A2, A3, A4, A5
-- [ ] Commit
+- [x] `voxel.js` `buildVoxelMesh` with per-colour merging and caching
+- [x] `models/charlie.js` per §4.1
+- [x] `player.js` hop state machine, arc, squash, facing, input buffer
+- [x] Ear spring + tail wag (§5.2)
+- [x] `input.js` keyboard + touch
+- [x] `camera.js` follow damping + auto-scroll
+- [x] Field bounds; A2, A3, A4, A5
+- [x] Commit
 
 ### Block 2 — World, grass, roads — **SAFETY CHECKPOINT** (0:55–1:35)
 - [ ] `rules/rng.js`, `rules/difficulty.js`, `rules/worldgen.js`

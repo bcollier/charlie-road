@@ -6,9 +6,14 @@
 // never fires. See SPEC.md §9a.
 
 import * as THREE from 'three';
-import { SIM, FIELD } from './config.js';
+import { SIM, FIELD, DIFF } from './config.js';
 import { PALETTE } from './palette.js';
 import { createScene } from './scene.js';
+import { createCamera } from './camera.js';
+import { createInput } from './input.js';
+import { createCharlie } from './models/charlie.js';
+import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate } from './player.js';
+import { stats as voxelStats } from './voxel.js';
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
@@ -22,8 +27,7 @@ export const state = {
   frame: 0,           // simulation steps taken
   seed: Number(params.get('seed')) || (Date.now() % 1_000_000),
   score: 0,
-  player: { x: 0, row: 0 },
-  cam: { x: 0, row: 0 },
+  player: createPlayer(),
 };
 
 const errors = [];
@@ -34,34 +38,82 @@ window.addEventListener('unhandledrejection', (e) => errors.push('unhandledrejec
 const canvas = document.getElementById('game');
 const view = createScene(canvas);
 const { renderer, scene, camera } = view;
+const cam = createCamera(view);
 
-// Block 0 placeholder world: one grass row across the field and a cube standing
-// where Charlie will. Enough to judge the camera against the reference shots.
-const grassGeo = new THREE.BoxGeometry(FIELD.MAX_X - FIELD.MIN_X + 1, 0.5, 1);
-for (let r = 0; r < 12; r++) {
-  const mat = new THREE.MeshLambertMaterial({ color: r % 2 ? PALETTE.GRASS_B : PALETTE.GRASS_A });
-  const m = new THREE.Mesh(grassGeo, mat);
-  m.position.set(0, -0.25, -r);
+// Block 1 placeholder world: grass bands with one asphalt strip so Charlie's
+// contrast can be judged on both (A3). Replaced by the real generator in Block 2.
+const slabGeo = new THREE.BoxGeometry(FIELD.MAX_X - FIELD.MIN_X + 1, 0.5, 1);
+for (let r = 0; r < 24; r++) {
+  const road = r >= 4 && r <= 6;
+  const color = road ? PALETTE.ASPHALT : (r % 2 ? PALETTE.GRASS_B : PALETTE.GRASS_A);
+  const m = new THREE.Mesh(slabGeo, new THREE.MeshLambertMaterial({ color }));
+  m.position.set(0, road ? -0.27 : -0.25, -r);
   m.receiveShadow = true;
   scene.add(m);
 }
-const cube = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.6),
-  new THREE.MeshLambertMaterial({ color: PALETTE.FUR_WHITE }));
-cube.position.set(0, 0.35, 0);
-cube.castShadow = true;
-cube.receiveShadow = true;
-scene.add(cube);
+
+const charlie = createCharlie();
+scene.add(charlie.root);
+
+// ---- World hooks the player needs (real ones arrive in Block 2) -----------
+const world = {
+  time: 0,
+  minRow: 0,
+  canMoveTo: (x, row) => true,
+  onHop: null,
+  onBlocked: null,
+};
+
+// ---- Input ------------------------------------------------------------------
+createInput({
+  onMove: (dir) => { if (state.phase === 'playing') queueMove(state.player, dir); },
+  onAction: () => {},
+  onPause: () => {},
+  onMute: () => {},
+}, canvas);
 
 // ---- Simulation -------------------------------------------------------------
+function autoScrollSpeed() {
+  const t = Math.min(state.score, DIFF.SCORE_CAP) / DIFF.SCORE_CAP;
+  return DIFF.AUTO_SCROLL.start + (DIFF.AUTO_SCROLL.end - DIFF.AUTO_SCROLL.start) * t;
+}
+
 function step(dt) {
   state.time += dt;
   state.frame += 1;
-  // Camera target: ahead of the player by CAM.LEAD rows (real follow logic lands in Block 1).
-  view.setTarget(state.cam.x, 0, -(state.cam.row + 1.5));
+  world.time = state.time;
+
+  const p = state.player;
+  if (state.phase === 'playing') {
+    updatePlayer(p, dt, world);
+    if (p.row > state.score) state.score = p.row;
+    cam.update(dt, p, autoScrollSpeed());
+  }
+
+  // Sync the rig to the player.
+  charlie.root.position.set(p.px, p.py, p.pz);
+  charlie.root.scale.set(p.scale[0], p.scale[1], p.scale[2]);
+  charlie.animate(dt, {
+    time: state.time,
+    vx: p.vx, vy: p.vy,
+    idle: p.idle,
+    moving: !!p.hop,
+    celebrate: p.celebrate,
+    carrying: p.carrying,
+    facingAngle: p.facingAngle,
+  });
 }
 
 function render() {
   renderer.render(scene, camera);
+}
+
+function reset(seed) {
+  if (seed !== undefined) state.seed = seed;
+  state.time = 0; state.frame = 0; state.score = 0;
+  state.player = createPlayer();
+  state.phase = 'playing';
+  cam.reset();
 }
 
 // ---- Loop -------------------------------------------------------------------
@@ -87,11 +139,9 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-function onResize() {
-  view.resize();
-}
-window.addEventListener('resize', onResize);
-onResize();
+window.addEventListener('resize', () => view.resize());
+view.resize();
+cam.reset();
 requestAnimationFrame(frame);
 
 // ---- Debug harness (§9a) ---------------------------------------------------
@@ -100,8 +150,9 @@ if (DEBUG) {
     state,
     step,
     steps(n, dt = 1 / 60) { for (let i = 0; i < n; i++) step(dt); render(); return state; },
-    input(dir) { /* wired in Block 1 */ return dir; },
-    reset(seed) { /* wired in Block 2 */ return seed; },
+    input(dir) { return queueMove(state.player, dir); },
+    reset(seed) { reset(seed); render(); return state.seed; },
+    celebrate() { celebrate(state.player); },
     stats() {
       const info = renderer.info;
       return {
@@ -111,10 +162,14 @@ if (DEBUG) {
         frame: state.frame,
         time: Number(state.time.toFixed(3)),
         visibility: document.visibilityState,
+        voxel: voxelStats(),
+        cam: { x: +cam.x.toFixed(2), row: +cam.row.toFixed(2), scroll: +cam.scrollRow.toFixed(2), trailing: +cam.trailingRow().toFixed(2) },
       };
     },
     errors,
     view,
+    cam,
+    charlie,
     THREE,
   };
   const hud = document.createElement('div');
@@ -122,6 +177,7 @@ if (DEBUG) {
   document.body.appendChild(hud);
   setInterval(() => {
     const s = window.__game.stats();
-    hud.textContent = `fps ${s.fps}  calls ${s.drawCalls}  tris ${s.triangles}  t ${s.time}  ${s.visibility}`;
+    const p = state.player;
+    hud.textContent = `fps ${s.fps}  calls ${s.drawCalls}  t ${s.time}  ${s.visibility}  | pos ${p.x.toFixed(1)},${p.row}  cam ${s.cam.row}  scroll ${s.cam.scroll}  score ${state.score}`;
   }, 250);
 }
