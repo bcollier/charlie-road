@@ -13,7 +13,9 @@
 > 4. A 90-second play session produces zero uncaught exceptions and zero console errors, at ≥50 fps on desktop.
 > 5. The game is deploy-ready: `.nojekyll` present, no absolute paths, README deploy steps written, and it runs correctly from `python3 -m http.server 8000`.
 
-**Human-gated, explicitly outside the goal:** creating the GitHub repo and pushing. Prepare everything; do not publish.
+**Repo:** `bcollier/charlie-road`, already created and **private**, `origin/main` tracking. Commit at the end of every block and push to `origin/main` when the goal is met.
+
+**Human-gated, explicitly outside the goal:** changing the repo to public and enabling GitHub Pages. That publishes the project to the open internet and is the owner's decision, not the build's. Leave the repo private; the README documents the two commands.
 
 **Checkpoint discipline:** `git commit` at the end of every block in §11. Never leave the tree broken across a block boundary.
 
@@ -375,7 +377,7 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 ## 11. Task list
 
 ### Block 0 — Foundation and camera (0:00–0:20)
-- [ ] `git init`; move v1 to `v1/index.html`; `.gitignore` (`reference/`, `.DS_Store`, `~$*`)
+- [ ] Move v1: `git mv index.html v1/index.html` (and `index.backup.html` alongside it). Repo, `.gitignore` and README already exist
 - [ ] `package.json`, `.nojekyll`, `index.html` with importmap, `styles.css`
 - [ ] Vendor `three.module.js` r186 into `vendor/`
 - [ ] `config.js`, `palette.js`
@@ -441,7 +443,7 @@ Generation is driven by a seeded `mulberry32`. `?seed=N` in the URL reproduces a
 - [ ] `node tests/run.js` green (A20)
 - [ ] 90-second clean session (A21), local server check (A22), v1 check (A23)
 - [ ] README, milestone screenshots for `development_log.docx`, prompt log updated
-- [ ] Final commit — **stop here; do not push**
+- [ ] Final commit and `git push origin main` — **do not make the repo public or enable Pages**
 
 ---
 
