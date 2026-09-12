@@ -62,7 +62,10 @@ export function createEagleSystem(scene, die) {
 
     /** Dying-phase update for death.type === 'eagle'. Owns Charlie's position once grabbed. */
     updateDying(p, deathT, time) {
-      const g = s.grab || { x: p.px, z: p.pz };
+      // Capture the grab point once; later calls move Charlie, so reading
+      // his position each time would make the reference drift away.
+      if (!s.grab) { s.grab = { x: p.px, z: p.pz }; model.root.visible = true; }
+      const g = s.grab;
       const from = new THREE.Vector3(g.x + 2.5, 6.5, g.z - 5);
       const at = new THREE.Vector3(g.x, 0.45, g.z);
       let pos, yaw;

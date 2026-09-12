@@ -95,7 +95,7 @@ export function createCharlie() {
   const ear = { L: { a: 0, v: 0 }, R: { a: 0, v: 0 } };
   const K = 18 * 18;
   const C = 2 * 0.35 * 18;
-  const tilt = { a: 0, turn: 0, side: 1, timer: 0 };
+  const tilt = { a: 0, turn: 0, up: 0, side: 1, timer: 0 };
 
   /**
    * Drive the rig from the player's state.
@@ -140,13 +140,19 @@ export function createCharlie() {
       // Look back over the RIGHT shoulder, always. The camera sits at +X/+Z,
       // and a -115° turn is the one that actually points his face at it
       // (dot with the view direction is 0.35; the other side is 0.09).
-      tilt.turn += (-2.0 - tilt.turn) * Math.min(1, dt / 0.35 * 3);
+      // On the title he already faces the viewer, so no turn there.
+      const turnGoal = s.title ? 0 : -2.0;
+      tilt.turn += (turnGoal - tilt.turn) * Math.min(1, dt / 0.35 * 3);
     } else {
       tilt.a += (0 - tilt.a) * Math.min(1, dt * 18);
       tilt.turn += (0 - tilt.turn) * Math.min(1, dt * 18);
       tilt.timer = 0;
     }
-    head.rotation.set(0, tilt.turn, tilt.a);
+    // On the title screen he looks up at the viewer: the camera pitches down
+    // 57°, so a vertical face is foreshortened unless it tips back toward it.
+    const lookUpGoal = s.title ? -0.6 : 0;
+    tilt.up += (lookUpGoal - tilt.up) * Math.min(1, dt * 6);
+    head.rotation.set(tilt.up, tilt.turn, tilt.a);
 
     tongue.visible = celebrating || (s.idle >= PLAYER.IDLE_TILT_AFTER && !s.moving);
     mouthBall.visible = !!s.carrying;

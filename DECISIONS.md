@@ -54,3 +54,13 @@ One line of reasoning each. Newest at the bottom.
 32. **The crossing bell dings every 0.45 s only for rail groups within −2…+7 rows of Charlie**, and the horn sounds once per sweep as a nearby train enters. Every rail row dinging at once was a cacophony.
 33. **Keyboard handling accepts both `event.code` and `event.key`.** The extension's synthetic keys, some virtual keyboards and IMEs set only one. Also learned: after a hard reload the page can lose focus and receive no key events at all — the test clicks the canvas first.
 34. **Mute unlocks the AudioContext too.** Every input path calls `audio.unlock()` so the first gesture of any kind satisfies the autoplay policy.
+
+## Block 6
+
+35. **On the title screen Charlie faces the viewer and looks up.** Facing alone wasn't enough: at 57° pitch a vertical face is foreshortened to half height. Tipping the head back −0.6 rad points it at the camera — the cocker begging face — and is where the breed cues and the accessories actually get seen. The over-the-shoulder glance is suppressed there since he's already facing you.
+36. **Title layout: logo at the top, picker at the bottom, Charlie in the clear.** A centred card covered him completely.
+37. **The first tap or key on the title starts the game and counts as the first hop**, as in Crossy Road. Game over restarts straight into play; an OUTFITS button on the card goes back to the title, which is the only place the picker lives.
+38. **Accessory unlocks are derived from the lifetime ball total, not stored.** `charlie.unlocked` in the spec would only ever mirror `ballsTotal >= cost`; deriving it can't drift. Equipped slots are stored as `charlie.accessory = {head, neck, body}`.
+39. **Death copy is per type:** OUCH (squashed), SPLASH (drowned), CHOO CHOO (train), BIRD! (eagle).
+40. **Pause freezes the simulation clock entirely** — `step()` returns before advancing time — and resets the frame timer on resume so no catch-up burst follows.
+41. **Fixed: the eagle's grab point.** Direct `die('eagle')` (harness) skipped the warning that captures it; the fallback then read Charlie's position each step while also moving him, and the camera chased him to row 168. The grab point is now captured once on first use.

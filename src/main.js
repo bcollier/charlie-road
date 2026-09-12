@@ -20,6 +20,7 @@ import { createUI } from './ui.js';
 import { storage } from './storage.js';
 import { BALL } from './config.js';
 import { createCharlie } from './models/charlie.js';
+import { applyAccessories, isUnlocked, byId, SLOTS } from './models/accessories.js';
 import { createPlayer, updatePlayer, queueMove, clearQueue, celebrate } from './player.js';
 import { difficulty, idleLimit } from './rules/difficulty.js';
 import { aabb, playerBox, vehicleBox } from './rules/collide.js';
@@ -45,6 +46,7 @@ export const state = {
   plays: storage.get('plays', 0),
   death: null,        // { type, t }
   newBest: false,
+  equipped: Object.assign({ head: null, neck: null, body: null }, storage.get('accessory', {})),
   player: createPlayer(),
 };
 
@@ -58,9 +60,15 @@ const view = createScene(canvas);
 const { renderer, scene, camera } = view;
 const cam = createCamera(view);
 const world = createWorld(scene, state.seed);
-const ui = createUI(document.getElementById('ui'));
+const ui = createUI(document.getElementById('ui'), {
+  onPause: () => togglePause(),
+  onMute: () => { audio.unlock(); ui.setMuted(audio.toggleMute()); },
+  onOutfits: () => enterTitle(),
+  onEquip: (id) => equip(id),
+});
 const charlie = createCharlie();
 scene.add(charlie.root);
+applyAccessories(charlie, state.equipped);
 
 // ---- Hooks the player state machine needs ---------------------------------
 const river = createRiverSystem(world, (type) => die(type));
@@ -78,16 +86,54 @@ const hooks = {
 };
 
 // ---- Input ------------------------------------------------------------------
-function onAction() {
-  if (state.phase === 'gameover') restart();
+// A move or tap starts the game from the title (and counts as the first hop),
+// restarts from game over, and is ignored while paused or dying.
+function onMoveInput(dir) {
+  audio.unlock();
+  switch (state.phase) {
+    case 'title': startGame(); queueMove(state.player, dir); break;
+    case 'playing': queueMove(state.player, dir); break;
+    case 'gameover': restart(); break;
+  }
 }
 createInput({
-  onMove: (dir) => { audio.unlock(); if (state.phase === 'playing') queueMove(state.player, dir); else if (state.phase === 'gameover') restart(); },
-  onTap: () => { audio.unlock(); if (state.phase === 'playing') queueMove(state.player, 'up'); else onAction(); },
-  onAction: () => { audio.unlock(); onAction(); },
-  onPause: () => {},
-  onMute: () => { audio.unlock(); audio.toggleMute(); },
+  onMove: onMoveInput,
+  onTap: () => onMoveInput('up'),
+  onAction: () => { audio.unlock(); if (state.phase === 'title') startGame(); else if (state.phase === 'gameover') restart(); else if (state.phase === 'paused') togglePause(); },
+  onPause: () => togglePause(),
+  onMute: () => { audio.unlock(); ui.setMuted(audio.toggleMute()); },
 }, canvas);
+
+function enterTitle() {
+  reset(FIXED_SEED ?? (Date.now() % 1_000_000));
+  state.phase = 'title';
+  state.player.facingAngle = Math.PI;          // face the viewer on the title
+  ui.hideGameOver();
+  ui.showTitle({ best: state.best, ballsTotal: state.ballsTotal, equipped: state.equipped });
+}
+
+function startGame() {
+  if (state.phase !== 'title') return;
+  state.phase = 'playing';
+  state.player.idle = 0;
+  ui.hideTitle();
+}
+
+function togglePause() {
+  if (state.phase === 'playing') { state.phase = 'paused'; ui.showPause(); }
+  else if (state.phase === 'paused') { state.phase = 'playing'; ui.hidePause(); last = performance.now(); }
+}
+
+function equip(id) {
+  const a = byId(id);
+  if (!a || !isUnlocked(id, state.ballsTotal)) return false;
+  state.equipped[a.slot] = state.equipped[a.slot] === id ? null : id;
+  storage.set('accessory', state.equipped);
+  applyAccessories(charlie, state.equipped);
+  ui.renderPicker(state.ballsTotal, state.equipped);
+  audio.hop(3);
+  return true;
+}
 
 // ---- Death ------------------------------------------------------------------
 function die(type) {
@@ -120,7 +166,7 @@ function finishDeath() {
     audio.newBest();
   }
   ui.setBest(state.best);
-  ui.showGameOver(state.score, state.best, state.newBest);
+  ui.showGameOver({ type: state.death.type, score: state.score, best: state.best, isNew: state.newBest, ballsRun: state.ballsRun });
 }
 
 function restart() {
@@ -219,6 +265,8 @@ function checkTrainSounds(p) {
 
 // ---- Simulation -------------------------------------------------------------
 function step(dt) {
+  if (state.phase === 'paused') return;          // frozen: nothing advances
+
   state.time += dt;
   state.frame += 1;
   hooks.time = state.time;
@@ -226,7 +274,12 @@ function step(dt) {
   const p = state.player;
   world.update(state.time);
 
-  if (state.phase === 'playing') {
+  if (state.phase === 'title') {
+    // Traffic runs behind the card; Charlie idles (and does his head-tilt).
+    p.idle += dt;
+    p.px = p.x; p.py = 0; p.pz = -p.row;
+    p.vx = 0; p.vy = 0;
+  } else if (state.phase === 'playing') {
     hooks.minRow = Math.max(0, Math.ceil(cam.trailingRow()));
     river.update(p);            // carry him on a log before the hop machine reads p.x
     updatePlayer(p, dt, hooks);
@@ -284,6 +337,7 @@ function step(dt) {
     celebrate: p.celebrate,
     carrying: p.carrying,
     facingAngle: p.facingAngle,
+    title: state.phase === 'title',
   });
   // Train hit: tumble end over end while airborne.
   charlie.root.rotation.z = (state.phase === 'dying' && state.death.type === 'trainHit') ? state.death.t * 16 : 0;
@@ -315,7 +369,8 @@ window.addEventListener('resize', () => view.resize());
 view.resize();
 ui.setBest(state.best);
 ui.setBalls(state.ballsTotal);
-reset(state.seed);
+ui.setMuted(audio.muted);
+enterTitle();
 requestAnimationFrame(frame);
 
 // ---- Debug harness (§9a) ---------------------------------------------------
@@ -328,6 +383,7 @@ if (DEBUG) {
     reset(seed) { reset(seed ?? state.seed); render(); return state.seed; },
     celebrate() { celebrate(state.player); },
     die,
+    enterTitle, startGame, togglePause, equip,
     stats() {
       const info = renderer.info;
       return {

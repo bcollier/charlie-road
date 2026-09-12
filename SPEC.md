@@ -483,12 +483,12 @@ The main loop must therefore route all simulation through the same fixed-step fu
 - [x] Commit
 
 ### Block 6 — UI shell (3:00–3:35)
-- [ ] Title screen: Charlie on grass, best score, balls fetched, start prompt
-- [ ] Pause, mute, game-over card with score / `BEST` / `NEW BEST!` / restart
-- [ ] Death camera beat (§5.8)
-- [ ] `models/accessories.js`: bandana, sunglasses, bow tie, sweater (§4.2)
-- [ ] Accessory picker on the title screen: 3 slots, lock state + ball cost, persisted (A18)
-- [ ] Commit
+- [x] Title screen: Charlie on grass, best score, balls fetched, start prompt
+- [x] Pause, mute, game-over card with score / `BEST` / `NEW BEST!` / restart
+- [x] Death camera beat (§5.8)
+- [x] `models/accessories.js`: bandana, sunglasses, bow tie, sweater (§4.2)
+- [x] Accessory picker on the title screen: 3 slots, lock state + ball cost, persisted (A18)
+- [x] Commit
 
 ### Block 7 — Polish, perf, ship prep (3:35–4:00)
 - [ ] Particle polish; tyre smoke; feathers→fur puff
