@@ -1,7 +1,7 @@
 // difficulty(score) → every score-dependent tunable, from one clamped ramp.
 // t = min(score, 300) / 300. Pure: no three.js, no DOM. See SPEC.md §3.4, §3.6.
 
-import { DIFF, EAGLE } from '../config.js';
+import { DIFF, SAUCER } from '../config.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -26,9 +26,9 @@ export function difficulty(score) {
   };
 }
 
-/** Eagle idle window: piecewise-linear over EAGLE.IDLE_LIMIT, clamped. */
+/** Saucer idle window: piecewise-linear over SAUCER.IDLE_LIMIT, clamped. */
 export function idleLimit(score) {
-  const pts = EAGLE.IDLE_LIMIT;
+  const pts = SAUCER.IDLE_LIMIT;
   if (score <= pts[0][0]) return pts[0][1];
   for (let i = 1; i < pts.length; i++) {
     const [s0, v0] = pts[i - 1];

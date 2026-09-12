@@ -72,3 +72,20 @@ One line of reasoning each. Newest at the bottom.
 44. **Tyre smoke was cut** (PLAN §5 "cut first" tier). Sparkles, splash, dust and fur are in; smoke on a near-miss would have been a fifth particle kind for a moment nobody notices.
 45. **The score HUD hides on the title screen**; the title carries its own best and ball count. The right-hand cluster (balls, pause, mute) stays.
 46. **`BUILD_LOG.md` stands in for "prompt log updated".** The v1 log is Kiro's; this session had one prompt — the goal — so the block-by-block account is the useful record, with the goal prompt reproduced at the end.
+
+
+## Round two
+
+47. **Bark stops traffic rather than exploding it.** Explode makes roads trivial; stop keeps the danger (a stopped car on your tile still kills) and the deterministic traffic model handles it cleanly — each lane pauses its own clock, so positions stay a pure function of lane time. Trains are unimpressed on purpose.
+48. **Shake-to-bark plus a button, always.** iOS gates motion behind a permission prompt that must come from a tap, and shake is undiscoverable. The button carries the cooldown too.
+49. **The eagle became the squirrels' saucer.** Owner didn't love the dog being taken by a bird; squirrels were already joining the game, so the pressure mechanic became their revenge. Same triggers and timings, new copy: ABDUCTED!
+50. **The bandana is tied at the back.** Real bandanas are; the knot and tails are exactly what the behind-and-above camera sees. Shades moved to the first unlock for the same reason: their temples show from behind.
+51. **Dress-up holds input for 1.3 s, on purpose.** It happens only at a game start, on the six safe rows, before the saucer runs. Moves tapped during it are buffered and fire after. The mid-run unlock fly-in stays cosmetic and never blocks.
+52. **Combo multiplier caps at ×3 and applies to golden balls.** Thresholds are 10/25/50/100; letting combos inflate totals makes the wardrobe reachable in a few good runs, which is the fun the owner asked for.
+53. **Squirrels flee at 5.2, just under Charlie's ~6.25 tiles/s, and bounce off the field edge twice before escaping.** At 7.5 they were uncatchable in testing; the bounce is the catch window.
+54. **The caterpillar's face is angled 45° toward the viewer.** Facing its travel direction showed the smile only in profile.
+55. **Vehicle lights got their own materials again** (+2 draw calls per vehicle) so they can glow at night. Typical frame is now ~150–250 calls at ~3 ms CPU; the owner measured 60 fps on the live site.
+56. **Daily seed is the UTC date; its best is stored per day.** Returning to the title drops back to normal mode; the DAILY button opts in each time.
+57. **The card photographs Charlie with a second camera into a render target**, posed face-on and looking up regardless of how he died, then composed on a 2D canvas. SAVE is a data-URL download; SHARE uses the Web Share API only where `canShare({files})` says yes.
+58. **`?enable_all_outfits=yes` flips a module-level switch in `isUnlocked`**, so the picker, equip and the load-time migration all agree without touching stored totals.
+59. **Tests unchanged at 127.** The generator gained `golden` and `critter` fields; every existing invariant still holds and the new fields are checked by the ball-on-free-column test.

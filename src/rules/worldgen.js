@@ -12,7 +12,7 @@
 // Difficulty is a function of the row index, since the score on reaching a
 // row is approximately that index. Pure: no three.js, no DOM.
 
-import { FIELD, DIFF, VEHICLES, RIVER, RAIL, BALL } from '../config.js';
+import { FIELD, DIFF, VEHICLES, RIVER, RAIL, BALL, GOLDEN, CATERPILLAR, SQUIRREL } from '../config.js';
 import { VEHICLE_COLORS } from '../palette.js';
 import { createRng } from './rng.js';
 import { difficulty } from './difficulty.js';
@@ -46,7 +46,7 @@ export function createGenerator(seed) {
     return w;
   }
 
-  function grassRow(i, empty) {
+  function grassRow(i, empty, afterHazard = false) {
     const d = difficulty(i);
     let obstacles = [];
     if (!empty) {
@@ -70,9 +70,16 @@ export function createGenerator(seed) {
     let ball = null;
     if (!empty && rng.chance(BALL.SPAWN_CHANCE)) {
       const open = [...free];
-      ball = { x: rng.pick(open) };
+      // Golden balls favour the first grass after a hazard run: the reward
+      // sits just past the risk.
+      const golden = rng.chance(afterHazard ? GOLDEN.CHANCE_AFTER_HAZARD : GOLDEN.CHANCE_ANYWHERE);
+      ball = { x: rng.pick(open), golden };
     }
-    return { index: i, type: 'grass', obstacles, wall: wall(), ball };
+    // Critters: a caterpillar or a squirrel crossing this row, occasionally.
+    let critter = null;
+    if (!empty && i >= CATERPILLAR.MIN_ROW && rng.chance(CATERPILLAR.CHANCE)) critter = { kind: 'caterpillar', dir: rng.chance(0.5) ? 1 : -1, delay: rng.range(0, 4) };
+    else if (!empty && i >= SQUIRREL.MIN_ROW && rng.chance(SQUIRREL.CHANCE)) critter = { kind: 'squirrel', dir: rng.chance(0.5) ? 1 : -1, delay: rng.range(0, 3) };
+    return { index: i, type: 'grass', obstacles, wall: wall(), ball, critter };
   }
 
   function roadRow(i, laneIndex, laneCount) {
@@ -158,7 +165,7 @@ export function createGenerator(seed) {
 
     if (type === 'grass') {
       const size = rng.int(DIFF.GROUP.grass[0], DIFF.GROUP.grass[1]);
-      for (let k = 0; k < size; k++) st.pending.push(grassRow(st.index++, false));
+      for (let k = 0; k < size; k++) st.pending.push(grassRow(st.index++, false, k === 0 && st.hazardRun > 0));
       st.hazardRun = 0;
       return;
     }

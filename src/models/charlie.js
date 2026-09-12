@@ -107,7 +107,8 @@ export function createCharlie() {
 
     // Ears: lag the vertical velocity, clamp, spring toward it. Lateral
     // velocity rolls both ears the opposite way; celebration flares them out.
-    const target = THREE.MathUtils.clamp(-0.55 * s.vy, -0.9, 0.9);
+    // Zoomies pin the ears back like a dog running flat out.
+    const target = THREE.MathUtils.clamp(-0.55 * s.vy, -0.9, 0.9) + (s.zoomies ? -0.7 : 0);
     for (const k of ['L', 'R']) {
       const e = ear[k];
       e.v += (K * (target - e.a) - C * e.v) * dt;
@@ -152,7 +153,9 @@ export function createCharlie() {
     // 57°, so a vertical face is foreshortened unless it tips back toward it.
     const lookUpGoal = s.title ? -0.6 : 0;
     tilt.up += (lookUpGoal - tilt.up) * Math.min(1, dt * 6);
-    head.rotation.set(tilt.up, tilt.turn, tilt.a);
+    // Playing with a toy: shake it side to side, the way he would.
+    const shake = s.shake ? 0.45 * Math.sin(s.time * 14) : 0;
+    head.rotation.set(tilt.up, tilt.turn + shake, tilt.a);
 
     tongue.visible = celebrating || (s.idle >= PLAYER.IDLE_TILT_AFTER && !s.moving);
     mouthBall.visible = !!s.carrying;

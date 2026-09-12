@@ -53,6 +53,12 @@ export function createScene(canvas) {
 
   const sunOffset = new THREE.Vector3(-5, 10, -4).normalize().multiplyScalar(30);
 
+  /** Sun height (10 = noon, 4 = low dusk sun with long shadows). */
+  function setSunElevation(y) {
+    sunOffset.set(-5, y, -4).normalize().multiplyScalar(30);
+    setTarget(target.x, target.y, target.z);
+  }
+
   const target = new THREE.Vector3(0, 0, 0);
   const frustum = { halfW: 1, halfH: 1, aspect: 1, w: 1, h: 1 };
 
@@ -94,5 +100,5 @@ export function createScene(canvas) {
   setTarget(0, 0, 0);
   resize();
 
-  return { renderer, scene, camera, sun, ambient, target, frustum, setTarget, resize, camDir };
+  return { renderer, scene, camera, sun, ambient, target, frustum, setTarget, setSunElevation, resize, camDir };
 }

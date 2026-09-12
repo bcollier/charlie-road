@@ -12,6 +12,7 @@ const KEY_DIRS = {
 const KEY_ACTION = new Set(['Space', 'Enter', ' ']);
 const KEY_PAUSE = new Set(['Escape', 'KeyP', 'p', 'P']);
 const KEY_MUTE = new Set(['KeyM', 'm', 'M']);
+const KEY_BARK = new Set(['KeyB', 'b', 'B']);
 
 const SWIPE_PX = 24;
 
@@ -34,6 +35,9 @@ export function createInput(h, surface) {
       if (!e.repeat) h.onPause();
     } else if (KEY_MUTE.has(e.code) || KEY_MUTE.has(e.key)) {
       if (!e.repeat) h.onMute();
+    } else if (KEY_BARK.has(e.code) || KEY_BARK.has(e.key)) {
+      e.preventDefault();
+      if (!e.repeat && h.onBark) h.onBark();
     }
   }
   window.addEventListener('keydown', onKey);

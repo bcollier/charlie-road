@@ -14,6 +14,11 @@ const KINDS = {
   splash:  { colors: [P.FOAM, P.WATER, 0xcfefff], count: 14, speed: [0.8, 2.2], up: [2.0, 4.0], size: 0.1, life: 0.6, gravity: GRAVITY },
   puff:    { colors: [0xd8d0c2, 0xbdb5a8, 0xf0ebe0], count: 10, speed: [1.2, 2.6], up: [0.3, 1.2], size: 0.12, life: 0.5, gravity: -2 },
   fur:     { colors: [P.FUR_WHITE, P.LIVER, P.LIVER_LIGHT], count: 12, speed: [1.5, 3.5], up: [2.0, 5.0], size: 0.08, life: 0.8, gravity: GRAVITY },
+  bark:    { colors: [0xffffff, 0xf7f3ea, 0x1b1b2a], count: 10, speed: [3.0, 5.0], up: [0.6, 1.6], size: 0.09, life: 0.4, gravity: -1 },
+  zoom:    { colors: [P.FUR_WHITE, P.LIVER_LIGHT, 0xfff7c0], count: 3, speed: [0.2, 0.6], up: [0.0, 0.4], size: 0.07, life: 0.35, gravity: 0 },
+  gold:    { colors: [P.GOLD, P.GOLD_SEAM, 0xffffff], count: 14, speed: [1.5, 3.5], up: [2.5, 5.0], size: 0.09, life: 0.7, gravity: -5 },
+  confetti:{ colors: [P.CAT_PINK, P.CAT_YELLOW, P.CAT_BLUE, P.CAT_LIME, P.CAT_ORANGE, P.CAT_PURPLE], count: 22, speed: [1.0, 3.2], up: [2.5, 5.5], size: 0.1, life: 1.1, gravity: -4 },
+  dust:    { colors: [0xd8d0c2, 0xc9c0b0], count: 6, speed: [0.8, 1.8], up: [0.2, 0.8], size: 0.1, life: 0.45, gravity: -2 },
 };
 
 export function createParticles(scene) {

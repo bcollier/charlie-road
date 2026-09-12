@@ -15,7 +15,9 @@ export function createBus(color) {
     box(1.0, 0.14, -0.44, 0.34, 0.28, 0.14, P.TYRE),
     box(-1.0, 0.14, 0.44, 0.34, 0.28, 0.14, P.TYRE),
     box(-1.0, 0.14, -0.44, 0.34, 0.28, 0.14, P.TYRE),
-    box(1.51, 0.34, 0.32, 0.02, 0.12, 0.16, P.VEHICLE_WHITE), // headlights
-    box(1.51, 0.34, -0.32, 0.02, 0.12, 0.16, P.VEHICLE_WHITE),
+    box(1.51, 0.34, 0.32, 0.02, 0.12, 0.16, P.HEADLIGHT),     // headlights
+    box(1.51, 0.34, -0.32, 0.02, 0.12, 0.16, P.HEADLIGHT),
+    box(-1.51, 0.34, 0.32, 0.02, 0.1, 0.14, P.TAILLIGHT),
+    box(-1.51, 0.34, -0.32, 0.02, 0.1, 0.14, P.TAILLIGHT),
   ], { name: 'bus' });
 }

@@ -16,7 +16,9 @@ export function createCar(color) {
     box(0.5, 0.12, -0.42, 0.3, 0.24, 0.12, P.TYRE),
     box(-0.5, 0.12, 0.42, 0.3, 0.24, 0.12, P.TYRE),
     box(-0.5, 0.12, -0.42, 0.3, 0.24, 0.12, P.TYRE),
-    box(0.81, 0.32, 0.3, 0.02, 0.1, 0.14, P.VEHICLE_WHITE), // headlights (white: keeps the model at 4 colours = 4 draw calls)
-    box(0.81, 0.32, -0.3, 0.02, 0.1, 0.14, P.VEHICLE_WHITE),
+    box(0.81, 0.32, 0.3, 0.02, 0.1, 0.14, P.HEADLIGHT),     // lights have their own materials so they can glow at night
+    box(0.81, 0.32, -0.3, 0.02, 0.1, 0.14, P.HEADLIGHT),
+    box(-0.81, 0.32, 0.3, 0.02, 0.08, 0.12, P.TAILLIGHT),
+    box(-0.81, 0.32, -0.3, 0.02, 0.08, 0.12, P.TAILLIGHT),
   ], { name: 'car' });
 }

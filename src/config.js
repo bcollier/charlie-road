@@ -85,11 +85,10 @@ export const RAIL = {
   SIGNAL_XS: [-3.5, 3.5],   // on the row seam, flanking the middle lanes: always one in a portrait view
 };
 
-// ---- Eagle (§3.6) -----------------------------------------------------------
-export const EAGLE = {
+// ---- The saucer (was the eagle; §3.6 timings unchanged) --------------------
+export const SAUCER = {
   IDLE_LIMIT: [[0, 5.0], [150, 3.0], [300, 2.0]], // piecewise-linear (score, seconds)
-  WARN: 0.8,
-  SWOOP: 0.55,
+  WARN: 0.8,                                        // searchlight sweeps and tightens
 };
 
 // ---- Tennis balls (§3.7) ----------------------------------------------------
@@ -103,6 +102,64 @@ export const BALL = {
   CELEBRATE_DURATION: 0.50,
   CELEBRATE_LIFT: 0.25,
   CELEBRATE_SPARKS: 8,
+};
+
+// ---- Bark -------------------------------------------------------------------
+export const BARK = {
+  COOLDOWN: 6.0,
+  FREEZE: 1.5,            // seconds vehicles stay stopped
+  ROWS_AHEAD: 2,          // his row plus this many ahead are affected
+  SHAKE_G: 18,            // m/s² of non-gravity acceleration that counts as a shake
+  SHAKE_DEBOUNCE: 0.8,
+};
+
+// ---- Golden ball and fetch combo -------------------------------------------
+export const GOLDEN = {
+  VALUE: 5,
+  CHANCE_AFTER_HAZARD: 0.35,   // first grass row after a hazard run
+  CHANCE_ANYWHERE: 0.05,
+  BOUNCE_HEIGHT: 0.7,
+};
+export const COMBO = {
+  WINDOW: 6.0,            // seconds between pickups to keep the chain
+  MAX_MULT: 3,
+};
+
+// ---- Zoomies ----------------------------------------------------------------
+export const ZOOMIES = {
+  TRIGGER_HOPS: 3,
+  TRIGGER_WINDOW: 1.0,
+  DURATION: 2.0,
+  HOP_SCALE: 0.5,         // hop duration multiplier while active
+  COOLDOWN: 8.0,
+};
+
+// ---- Caterpillar and squirrel ---------------------------------------------
+export const CATERPILLAR = {
+  CHANCE: 0.08,           // per grass row past the start
+  MIN_ROW: 8,
+  SEGMENTS: 8,
+  SEG_LEN: 0.42,
+  SPEED: 2.2,
+  WIGGLE: 0.22,
+  VALUE: 5,
+  PLAY_TIME: 2.4,         // seconds Charlie plays with it after the catch
+};
+export const SQUIRREL = {
+  CHANCE: 0.07,
+  MIN_ROW: 8,
+  DASH: 1.4,              // tiles per dash
+  DASH_SPEED: 4.5,
+  PAUSE: [0.3, 0.7],
+  PANIC_RADIUS: 1.8,
+  PANIC_SPEED: 5.2,       // just under Charlie's hop speed: catchable with effort
+  PANIC_BOUNCES: 2,       // turns back at the field edge this many times, then escapes
+  VALUE: 3,
+};
+
+// ---- Day cycle --------------------------------------------------------------
+export const DAYCYCLE = {
+  PERIOD_ROWS: 300,       // one full day per this many rows of score
 };
 
 // ---- Rendering --------------------------------------------------------------

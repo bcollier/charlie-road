@@ -27,7 +27,7 @@ export function createWorld(scene, seed, extraBuilders = {}) {
     const row = build(desc);
     row.ball = null;
     if (desc.ball) {
-      row.ball = createBall(desc.ball.x, desc.index, (desc.index * 0.37) % 1);
+      row.ball = createBall(desc.ball.x, desc.index, (desc.index * 0.37) % 1, !!desc.ball.golden);
       row.group.add(row.ball.mesh);
     }
     rows.set(desc.index, row);

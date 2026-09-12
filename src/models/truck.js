@@ -20,7 +20,9 @@ export function createTruck(color) {
     box(-1.5, 0.14, -0.44, 0.34, 0.28, 0.14, P.TYRE),
     box(-0.3, 0.14, 0.44, 0.34, 0.28, 0.14, P.TYRE),
     box(-0.3, 0.14, -0.44, 0.34, 0.28, 0.14, P.TYRE),
-    box(1.91, 0.36, 0.32, 0.02, 0.12, 0.16, P.VEHICLE_WHITE),  // headlights
-    box(1.91, 0.36, -0.32, 0.02, 0.12, 0.16, P.VEHICLE_WHITE),
+    box(1.91, 0.36, 0.32, 0.02, 0.12, 0.16, P.HEADLIGHT),      // headlights
+    box(1.91, 0.36, -0.32, 0.02, 0.12, 0.16, P.HEADLIGHT),
+    box(-1.91, 0.36, 0.32, 0.02, 0.1, 0.14, P.TAILLIGHT),
+    box(-1.91, 0.36, -0.32, 0.02, 0.1, 0.14, P.TAILLIGHT),
   ], { name: 'truck' });
 }

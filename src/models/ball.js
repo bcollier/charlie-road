@@ -39,11 +39,11 @@ export function buildBallGeometry() {
 }
 
 /** A complete ball mesh group (body + seams), sharing the cached geometry. */
-export function createBallMesh() {
+export function createBallMesh(golden = false) {
   if (!ballGeo) build();
   const g = new THREE.Group();
-  const body = new THREE.Mesh(ballGeo, material(P.BALL));
-  const seam = new THREE.Mesh(seamGeo, material(P.BALL_SEAM));
+  const body = new THREE.Mesh(ballGeo, material(golden ? P.GOLD : P.BALL));
+  const seam = new THREE.Mesh(seamGeo, material(golden ? P.GOLD_SEAM : P.BALL_SEAM));
   body.castShadow = seam.castShadow = true;
   body.receiveShadow = seam.receiveShadow = false;
   g.add(body, seam);

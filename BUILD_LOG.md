@@ -68,6 +68,14 @@ On the title Charlie faces the viewer and looks up, which is where the cocker cu
 
 `screenshots/block6-*.{jpg,png}`
 
+## Round two — after the first play-test
+
+Requested after playing the live site: bark (B / button / shake) that stops traffic, a cuter pressure mechanic than the eagle (it became the squirrels' flying saucer), a bandana you can actually see, shades as the first unlock, an unlock fly-in and a dress-up at the next start, on-screen controls, and a `?enable_all_outfits=yes` flag. Plus seven of the ten suggested features — golden balls, fetch combo, zoomies, the caterpillar toy, squirrels, the day cycle, the daily challenge — and the shareable card.
+
+Built in five commits on `features`, each verified through the harness before the next. Notable finds along the way: the squirrel was uncatchable at 7.5 tiles/s (now 5.2 with an edge bounce), the caterpillar's smile only showed in profile (now angled at the camera), the card photographed a drowned Charlie underground (now posed for the photo), and two of my own test harnesses lied to me — one held a stale player reference across `reset()`, one counted blocked inputs as hops.
+
+`screenshots/round2-*`
+
 ## Block 7 — Verification and ship prep
 
 See the final report and the acceptance table in `SPEC.md` §10.
