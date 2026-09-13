@@ -8,3 +8,8 @@ Thumbs.db
 
 # Node (only package.json is tracked; there are no dependencies)
 node_modules/
+
+# Gameplay video: 442 MB, far over GitHub's 100 MB file limit. Hosted on YouTube instead.
+charlie_road_gameplay_video.mov
+*.mov
+*.mp4
