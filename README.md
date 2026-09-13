@@ -89,7 +89,7 @@ The bark, the squirrels' saucer, the caterpillar, golden balls, combos, zoomies,
 
 Charlie in his sweater, mid-caterpillar, best score 105, 245 balls fetched. Click to watch the gameplay video on YouTube.
 
-<a href="https://www.youtube.com/watch?v=REPLACE_WITH_VIDEO_ID"><img src="screenshots/dev-log/final-gameplay.jpg" width="900" alt="Charlie Road gameplay video"></a>
+<a href="https://youtu.be/4csO6aQQAdw"><img src="screenshots/dev-log/final-gameplay.jpg" width="900" alt="Charlie Road gameplay video"></a>
 
 ## AI models, tools and strategy
 
