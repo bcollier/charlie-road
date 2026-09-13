@@ -2,6 +2,8 @@
 
 **Play it: [bcollier.github.io/charlie-road](https://bcollier.github.io/charlie-road/)**
 
+Curious what 30 minutes got? **[Play v1](https://bcollier.github.io/charlie-road/v1/)**, the in-class prototype, untouched.
+
 ## What it is
 
 Charlie is our 9 year old American Cocker Spaniel. He is a fun loving dog with a lot of attitude who lives for chasing tennis balls, wherever that may take him. In this game that means straight across eight lanes of traffic.
@@ -41,7 +43,7 @@ All four are in the game. Static site, no build step, hosted on GitHub Pages.
 
 ### The first 30 minutes, in class (Kiro)
 
-Five versions in half an hour, from coloured rectangles to a fake-isometric board that never quite worked. The prompts are in `prompt_log.md`; the code is preserved in `v1/`.
+Five versions in half an hour, from coloured rectangles to a fake-isometric board that never quite worked. The prompts are in `prompt_log.md`; the code is preserved in `v1/` and you can **[play it here](https://bcollier.github.io/charlie-road/v1/)** (arrow keys or WASD, R to restart).
 
 <table>
   <tr>
@@ -160,7 +162,7 @@ Checks the world generator's fairness invariants over 50 seeds x 2,000 rows (nev
 | [`BUILD_LOG.md`](BUILD_LOG.md) | Block-by-block account of the build sessions |
 | [`screenshots/`](screenshots/) | Milestone screenshots from each block and round two; `dev-log/` holds the five in-class versions |
 | `development_log.docx` | The in-class development log the V1 to V5 screenshots come from |
-| `v1/` | The original 30-minute prototype (canvas 2D), preserved |
+| `v1/` | The original 30-minute prototype (canvas 2D), preserved and [playable](https://bcollier.github.io/charlie-road/v1/) |
 | `.kiro/specs/`, `kiro_prompt_log.md` | The v1 spec and Kiro's prompt log |
 | `reference/` | Gameplay screenshots of the original and photos of Charlie, with a README on what each was used for |
 
