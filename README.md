@@ -58,7 +58,7 @@ Five versions in half an hour, from coloured rectangles to a fake-isometric boar
 
 ### The rebuild, at home (Claude Code)
 
-Planned for four hours, built in about one. Camera angle measured from real gameplay screenshots, three.js instead of a fake isometric, Charlie rigged with spring-loaded ears, every block verified by stepping the simulation through a debug harness.
+Planned for four hours, took about three. Camera angle measured from real gameplay screenshots, three.js instead of a fake isometric, Charlie rigged with spring-loaded ears, every block verified by stepping the simulation through a debug harness.
 
 <table>
   <tr>
